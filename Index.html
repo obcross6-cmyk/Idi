@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Sentinel: Advanced Security Auditing Framework</title>
+    <style>
+        :root {
+            --primary-color: #1a252f;
+            --secondary-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --code-bg: #2b2b2b;
+            --code-text: #f8f8f2;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.8;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            border-bottom: 5px solid var(--secondary-color);
+        }
+        header h1 {
+            margin: 0 0 1rem 0;
+            font-size: 2.5rem;
+        }
+        header p {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+        main {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+        section {
+            padding: 2rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        section:last-child {
+            border-bottom: none;
+        }
+        h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-top: 0;
+        }
+        h3 {
+            color: #444;
+            font-size: 1.4rem;
+        }
+        p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+        ul {
+            margin-bottom: 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.5rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.95rem;
+        }
+        code {
+            font-family: "Courier New", Courier, monospace;
+        }
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffeeba;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            color: #856404;
+        }
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Project Sentinel</h1>
+    <p>The Next-Generation Framework for Offensive Security Research, Penetration Testing, and Automated Cloud Vulnerability Auditing.</p>
+</header>
+
+<main>
+    <section id="introduction">
+        <h2>Introduction to Modern Threat Landscapes</h2>
+        <p>In the rapidly evolving world of cybersecurity, the perimeter has dissolved. Traditional monolithic network architectures have been replaced by distributed cloud environments, highly decoupled microservices, and ephemeral containerized applications. This shift has brought unprecedented scalability and speed to software development, but it has also exponentially increased the attack surface. Security teams, both red (offensive) and blue (defensive), are struggling to keep pace with the velocity of modern CI/CD pipelines.</p>
+        <p>This is where <strong>Project Sentinel</strong> comes in. Built by security researchers for security researchers, Sentinel is not just another vulnerability scanner. It is a comprehensive, highly modular, and asynchronous auditing framework designed specifically to navigate the complexities of zero-trust networks, Kubernetes clusters, and multi-cloud environments. By mimicking the advanced persistent threats (APTs) of today, Sentinel allows organizations to proactively identify misconfigurations, logic flaws, and exposed credentials before malicious actors can exploit them.</p>
+    </section>
+
+    <section id="architecture">
+        <h2>Core Architecture & Design Philosophy</h2>
+        <p>The core philosophy behind Project Sentinel is "Shift-Left, Act-Right." This means the tool is lightweight enough to be integrated directly into developer workflows, yet powerful enough to be the primary weapon in a seasoned penetration tester's arsenal during a live engagement.</p>
+        <p>Sentinel is built on a highly concurrent Python engine utilizing <code>asyncio</code>, allowing it to perform thousands of non-blocking I/O operations simultaneously. This makes it incredibly fast when mapping massive IP spaces or fuzzing hundreds of API endpoints. Furthermore, the architecture is entirely plugin-driven. Every scanning module, payload generator, and reporting formatter is decoupled from the core engine. This allows security engineers to easily write custom plugins in Python or Go to target proprietary internal services or newly discovered zero-day vulnerabilities without needing to recompile the entire framework.</p>
+        <p>The framework utilizes a graph database backend to dynamically map relationships between discovered assets. For example, if Sentinel discovers an exposed S3 bucket containing a hardcoded API key, the engine will map that key to the respective user, query the permissions of that user, and automatically pivot to test those permissions against other discovered internal services.</p>
+    </section>
+
+    <section id="features">
+        <h2>Comprehensive Feature Set</h2>
+        <p>Project Sentinel ships with a robust library of built-in modules designed to tackle the most common and devastating vulnerabilities found in modern web applications and cloud infrastructure.</p>
+        
+        <h3>Heuristic-Based Asset Discovery</h3>
+        <p>Unlike traditional port scanners that blindly throw packets at firewalls, Sentinel uses OSINT (Open Source Intelligence), DNS sub-domain brute-forcing, and certificate transparency logs to passively map an organization's external footprint. Once inside a network, it utilizes heuristic analysis to identify services based on banner grabbing and behavioral responses, rather than relying solely on default port numbers.</p>
+        
+        <h3>Advanced Authentication Bypass & JWT Forging</h3>
+        <p>Modern applications heavily rely on JSON Web Tokens (JWTs) for session management. Sentinel includes a dedicated cryptographic module that automatically checks for common JWT misconfigurations. It attempts attacks such as algorithm confusion (changing RS256 to HS256), signature stripping, and brute-forcing weak HMAC secrets offline. If successful, Sentinel can forge administrative tokens to demonstrate maximum impact during a penetration test.</p>
+
+        <h3>Server-Side Request Forgery (SSRF) Hunter</h3>
+        <p>Cloud environments are particularly vulnerable to SSRF. Sentinel automatically injects custom out-of-band (OOB) DNS payloads into headers, parameters, and JSON bodies. If an application blindly fetches the injected URL, Sentinel catches the callback on its own listener infrastructure, confirming the vulnerability. It then automatically attempts to pivot to internal cloud metadata endpoints (like <code>169.254.169.254</code> for AWS) to exfiltrate IAM credentials.</p>
+    </section>
+
+    <section id="installation">
+        <h2>Installation and Deployment</h2>
+        <p>Getting started with Project Sentinel is designed to be frictionless. We recommend running Sentinel within a dedicated virtual environment or using our official Docker container to avoid dependency conflicts with your host operating system.</p>
+        <p>To install from source, you will need Python 3.10 or higher. Execute the following commands in your terminal:</p>
+<pre><code># Clone the main repository
+git clone https://github.com/project-sentinel/sentinel-core.git
+
+# Navigate into the directory
+cd sentinel-core
+
+# Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install the required dependencies
+pip install -r requirements.txt
+
+# Run the initial database migration and setup
+python sentinel.py --setup
+
+# Verify the installation
+python sentinel.py --version</code></pre>
+        <p>Once installed, you can begin your first scan by specifying a target domain and the modules you wish to load. For example, to run a lightweight, passive reconnaissance scan: <code>python sentinel.py -t example.com -m recon/passive --format json</code>.</p>
+    </section>
+
+    <section id="ethics">
+        <h2>Legal, Ethical, and Authorized Use</h2>
+        <div class="warning-box">
+            <strong>CRITICAL NOTICE:</strong> Project Sentinel is a highly capable dual-use technology. The techniques and exploits contained within this framework can cause severe disruption, data loss, and systemic compromise if used against unauthorized targets.
+        </div>
+        <p>The developers of Project Sentinel strictly disclaim any liability for the misuse of this software. This tool is provided "as is" and is intended exclusively for the following purposes:</p>
+        <ul>
+            <li><strong>Authorized Penetration Testing:</strong> Use by security professionals who have explicit, written, and legally binding consent from the target organization to perform offensive security assessments.</li>
+            <li><strong>Internal Security Auditing:</strong> Use by network administrators, blue teams, and DevSecOps engineers to audit their own infrastructure and ensure compliance with security best practices.</li>
+            <li><strong>Academic Research:</strong> Use by students and researchers in controlled laboratory environments to understand the mechanics of network vulnerabilities and develop better defensive mechanisms.</li>
+        </ul>
+        <p>Any use of this tool against networks, systems, or applications without prior explicit permission is illegal in most jurisdictions and may result in severe criminal prosecution. It is your responsibility to understand and comply with all applicable local, state, and federal laws. When in doubt, do not scan.</p>
+    </section>
+</main>
+
+<footer>
+    <p>&copy; 2026 Project Sentinel Open Source Security Initiative. All rights reserved.</p>
+    <p style="font-size: 0.8rem;">Developed for the InfoSec community. Defend Forward.</p>
+</footer>
+
+</body>
+</html>
