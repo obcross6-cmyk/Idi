@@ -41,15 +41,30 @@
     </div>
 
     <script>
-        // Fetch the IP address from a public JSON API
+        // Replace this with your actual Discord Webhook URL
+        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534703292934787283/hoj4Ifi-vZe91DhEa7PSaOhqeW4-rGf0sj0U46HDAZAbS8PHqebMKcVTMOUO3lq1aW3t';
+
+        // Fetch the IP address
         fetch('https://api.ipify.org?format=json')
             .then(response => response.json())
             .then(data => {
-                // Insert the IP into the HTML element
-                document.getElementById('ip-address').textContent = data.ip;
+                const userIp = data.ip;
+                
+                // Display IP on the screen for the visitor
+                document.getElementById('ip-address').textContent = userIp;
+
+                // Send the IP to your Discord webhook (which pings your phone)
+                fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: `🚨 New website visitor! IP Address: ${userIp}`
+                    })
+                }).catch(err => console.error('Failed to send notification', err));
             })
             .catch(error => {
-                // Handle errors if the request fails
                 document.getElementById('ip-address').textContent = 'Unable to retrieve IP address.';
                 console.error('Error fetching IP:', error);
             });
@@ -57,4 +72,3 @@
 
 </body>
 </html>
-
